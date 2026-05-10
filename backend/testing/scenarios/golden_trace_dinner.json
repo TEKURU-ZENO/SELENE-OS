@@ -1,0 +1,248 @@
+[
+  {
+    "id": "598d5a12-2068-4217-89bd-0da0f87fce9e",
+    "type": "system_state",
+    "timestamp": "2026-05-09T18:09:57.443681",
+    "payload": {
+      "message": "Parsing intent...",
+      "status": "running"
+    }
+  },
+  {
+    "id": "7e9829c7-1a45-4282-a1e5-0d43fa94c57e",
+    "type": "execution_log",
+    "timestamp": "2026-05-09T18:09:57.984910",
+    "payload": {
+      "message": "Intent detected: TASK | Confidence: 0.96"
+    }
+  },
+  {
+    "id": "c5af1dd7-a6b3-4315-875f-2251c5f0d587",
+    "type": "execution_log",
+    "timestamp": "2026-05-09T18:09:57.985326",
+    "payload": {
+      "message": "Inferring context: Booking context required (Time, Party Size, Location)"
+    }
+  },
+  {
+    "id": "f083ac5e-5d14-4ada-8701-07c54900b6ba",
+    "type": "system_state",
+    "timestamp": "2026-05-09T18:09:57.985432",
+    "payload": {
+      "message": "Generating Hierarchical Plan...",
+      "status": "running"
+    }
+  },
+  {
+    "id": "38cd8a41-2d12-4204-b974-d91c43fc7a08",
+    "type": "system_state",
+    "timestamp": "2026-05-09T18:09:58.997832",
+    "payload": {
+      "message": "Plan Generated",
+      "plan_id": "plan_din_01",
+      "dag": {
+        "plan_id": "plan_din_01",
+        "objective": "Book dinner at Dorsia for 4 at 8 PM",
+        "groups": [
+          {
+            "id": "g1",
+            "objective": "Find availability",
+            "nodes": [
+              {
+                "id": "n1",
+                "capability": "NAVIGATE_WEB",
+                "params": {
+                  "url": "dorsia.com/reservations"
+                }
+              }
+            ]
+          },
+          {
+            "id": "g2",
+            "objective": "Submit Booking",
+            "nodes": [
+              {
+                "id": "n2",
+                "capability": "INTERACT_UI",
+                "params": {
+                  "action": "submit_form"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "4b71de42-3ea6-4a11-82dc-113a74e6ed83",
+    "type": "system_state",
+    "timestamp": "2026-05-09T18:09:58.998062",
+    "payload": {
+      "message": "Critic Evaluation",
+      "status": "running"
+    }
+  },
+  {
+    "id": "6553b537-5711-4292-9f0d-f386182d04d7",
+    "type": "execution_log",
+    "timestamp": "2026-05-09T18:09:59.511101",
+    "payload": {
+      "message": "Critic Warning: Node n2 (INTERACT_UI) is a high-risk mutation."
+    }
+  },
+  {
+    "id": "36d61e82-2c3a-4fcd-a242-5726564237a7",
+    "type": "execution_log",
+    "timestamp": "2026-05-09T18:09:59.511253",
+    "payload": {
+      "message": "Inserting HITL Checkpoint at Node n2."
+    }
+  },
+  {
+    "id": "be055a79-2d9a-4fe4-a660-55052c89c04b",
+    "type": "system_state",
+    "timestamp": "2026-05-09T18:09:59.511299",
+    "payload": {
+      "message": "Executing Group g1: Find availability",
+      "status": "running"
+    }
+  },
+  {
+    "id": "67d7df03-f8d4-4cf2-a2b5-c785bbff3e20",
+    "type": "execution_log",
+    "timestamp": "2026-05-09T18:10:00.525010",
+    "payload": {
+      "message": "BrowserAgent navigating to dorsia.com..."
+    }
+  },
+  {
+    "id": "0833b070-beeb-4c47-ab87-f03669b517f6",
+    "type": "execution_log",
+    "timestamp": "2026-05-09T18:10:00.525256",
+    "payload": {
+      "message": "[ERROR] TimeoutExceeded: 30000ms exceeded."
+    }
+  },
+  {
+    "id": "8a4ac627-9608-4c8d-9188-1424e13fb582",
+    "type": "system_state",
+    "timestamp": "2026-05-09T18:10:00.525429",
+    "payload": {
+      "message": "Execution Failed. Triggering Plan Repair...",
+      "status": "repairing"
+    }
+  },
+  {
+    "id": "14a3d194-0fc3-45bf-ad42-bebb8b017fc8",
+    "type": "execution_log",
+    "timestamp": "2026-05-09T18:10:01.535829",
+    "payload": {
+      "message": "Critic suggests: Retry with explicit wait constraints or fallback to API."
+    }
+  },
+  {
+    "id": "38331dc8-3e3a-4fd5-b817-621e95594c2a",
+    "type": "system_state",
+    "timestamp": "2026-05-09T18:10:01.536026",
+    "payload": {
+      "message": "Retrying Node n1...",
+      "status": "running"
+    }
+  },
+  {
+    "id": "93250f80-9028-4dc1-86ad-72889d7c932d",
+    "type": "execution_log",
+    "timestamp": "2026-05-09T18:10:01.536165",
+    "payload": {
+      "message": "BrowserAgent navigated successfully. Found 8 PM slot."
+    }
+  },
+  {
+    "id": "756eea83-1eb1-44eb-98e7-b96f5b0ed20d",
+    "type": "system_state",
+    "timestamp": "2026-05-09T18:10:01.536244",
+    "payload": {
+      "message": "Awaiting Human Confirmation",
+      "status": "halted"
+    }
+  },
+  {
+    "id": "0819cdc9-999c-4902-a3e6-7f60cd154004",
+    "type": "interrupt",
+    "timestamp": "2026-05-09T18:10:01.536286",
+    "payload": {
+      "action": "Confirm reservation at Dorsia for 8:00 PM for 4 people.",
+      "reason": "Policy Engine requires explicit approval for state-mutating actions (Booking).",
+      "risk_level": "medium",
+      "rollback_available": false
+    }
+  },
+  {
+    "id": "aaf31986-7484-4cc4-8125-cbb33eb4ff51",
+    "type": "execution_log",
+    "timestamp": "2026-05-09T18:10:03.037985",
+    "payload": {
+      "message": "[USER MODIFICATION] Change time to 8:30 PM."
+    }
+  },
+  {
+    "id": "718f48ca-9f79-470c-9ec6-3316962c2da1",
+    "type": "system_state",
+    "timestamp": "2026-05-09T18:10:03.038126",
+    "payload": {
+      "message": "Resuming execution with modified parameters...",
+      "status": "running"
+    }
+  },
+  {
+    "id": "372669f5-0480-490d-94ea-73bf537d56a3",
+    "type": "execution_log",
+    "timestamp": "2026-05-09T18:10:04.046528",
+    "payload": {
+      "message": "Booking confirmed for 8:30 PM."
+    }
+  },
+  {
+    "id": "8ec1d8e3-d56b-45a6-abea-3717bee53ade",
+    "type": "system_state",
+    "timestamp": "2026-05-09T18:10:04.046845",
+    "payload": {
+      "message": "Execution Complete.",
+      "status": "success"
+    }
+  },
+  {
+    "id": "ecbcbe8d-889c-4074-be88-03c7d326a4f4",
+    "type": "system_state",
+    "timestamp": "2026-05-09T18:10:04.046939",
+    "payload": {
+      "message": "Reflection & Consolidation",
+      "status": "running"
+    }
+  },
+  {
+    "id": "dddbaa66-3ba9-4154-9614-243838643650",
+    "type": "reflection",
+    "timestamp": "2026-05-09T18:10:05.060162",
+    "payload": {
+      "type": "learned",
+      "pattern": "Browser navigation on Dorsia domain shows elevated latency.",
+      "confidence": 0.72,
+      "evidence": "1 timeout failure required repair loop retry.",
+      "status": "Accepted"
+    }
+  },
+  {
+    "id": "0dadf052-be59-48ee-96e0-cda3f9115629",
+    "type": "reflection",
+    "timestamp": "2026-05-09T18:10:05.060403",
+    "payload": {
+      "type": "learned",
+      "pattern": "User frequently modifies booking times late in the workflow.",
+      "confidence": 0.85,
+      "evidence": "User modified 8:00 PM to 8:30 PM at the HITL step.",
+      "status": "Accepted"
+    }
+  }
+]

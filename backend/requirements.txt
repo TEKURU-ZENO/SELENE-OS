@@ -24,9 +24,12 @@ redis==5.2.1
 faiss-cpu==1.11.0
 numpy==2.2.5
 
-# Orchestration (Phase 3+)
-# langgraph==0.4.1
-# pydantic-ai==0.1.0
+# Orchestration
+langgraph==0.4.1
+pydantic-ai==0.1.0
+
+# Async SQLite (alpha DB)
+aiosqlite==0.20.0
 
 # CORS & Security
 python-jose[cryptography]==3.4.0
@@ -37,3 +40,5 @@ python-multipart==0.0.20
 python-dotenv==1.1.0
 structlog==25.1.0
 uuid7==0.1.0
+beautifulsoup4==4.12.3
+playwright==1.49.0

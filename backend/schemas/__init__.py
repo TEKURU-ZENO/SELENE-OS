@@ -86,9 +86,11 @@ class MessageRole(str, Enum):
     SYSTEM = "system"
 
 class ChatMessage(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     role: MessageRole
     content: str
     metadata: Optional[Dict[str, Any]] = None
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 class RiskLevel(str, Enum):
     LOW = "low"
@@ -127,7 +129,12 @@ class Capability(str, Enum):
     FIND_INFORMATION = "find_information"
     INTERACT_UI = "interact_ui"
     EXECUTE_CODE = "execute_code"
+    NOTIFY_USER = "notify_user"
     PLUGIN_CAPABILITY = "plugin_capability" # dynamic extension
+
+class SafeCommand(str, Enum):
+    RUN_GIT_STATUS = "run_git_status"
+    RUN_TESTS = "run_tests"
 
 class FilePermissionMode(str, Enum):
     READ_ONLY = "read_only"

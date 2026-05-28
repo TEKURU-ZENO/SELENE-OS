@@ -3,6 +3,7 @@ SELENE OS — Configuration Settings
 Centralized configuration using Pydantic Settings for type-safe env management.
 """
 
+import os
 from pydantic_settings import BaseSettings
 from pydantic import Field
 from typing import Optional
@@ -13,6 +14,7 @@ class Environment(str, Enum):
     DEVELOPMENT = "development"
     STAGING = "staging"
     PRODUCTION = "production"
+    ALPHA = "alpha"
 
 
 class LLMProvider(str, Enum):
@@ -62,6 +64,11 @@ class Settings(BaseSettings):
         "email_send",
         "browser_action",
     ]
+    FORCE_HITL_ALL_EXTERNAL_MUTATIONS: bool = False
+    BLOCK_SSRF: bool = True
+    REPLAY_DIR: str = "./replays"
+    EXPORT_DIR: str = "./exports"
+    AUDIT_DIR: str = "./audit"
 
     # ── Logging ──────────────────────────────────────────────────
     LOG_LEVEL: str = "INFO"
@@ -74,5 +81,21 @@ class Settings(BaseSettings):
     }
 
 
+# Read profile and apply profile-based defaults
+env_val = os.getenv("ENVIRONMENT", "development").lower()
+profile_overrides = {}
+try:
+    if env_val == "alpha":
+        from .alpha import AlphaConfig
+        profile_overrides = {k: v for k, v in AlphaConfig.__dict__.items() if not k.startswith("__")}
+    elif env_val == "production":
+        from .production import ProductionConfig
+        profile_overrides = {k: v for k, v in ProductionConfig.__dict__.items() if not k.startswith("__")}
+    elif env_val == "development":
+        from .development import DevelopmentConfig
+        profile_overrides = {k: v for k, v in DevelopmentConfig.__dict__.items() if not k.startswith("__")}
+except ImportError:
+    pass
+
 # Singleton instance
-settings = Settings()
+settings = Settings(**profile_overrides)

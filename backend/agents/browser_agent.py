@@ -84,10 +84,56 @@ class BrowserAgent:
         logger.debug("dom_state_captured", path=screenshot_path)
         return screenshot_path
 
+    def _is_ssrf_safe(self, url: str) -> bool:
+        import urllib.parse
+        import socket
+        import ipaddress
+        
+        try:
+            parsed = urllib.parse.urlparse(url)
+            host = parsed.hostname
+            if not host:
+                return False
+                
+            host_lower = host.lower()
+            if host_lower in ("localhost", "127.0.0.1", "[::1]", "0.0.0.0"):
+                return False
+                
+            try:
+                addr_info = socket.getaddrinfo(host, None)
+                for family, _, _, _, sockaddr in addr_info:
+                    ip_str = sockaddr[0]
+                    ip = ipaddress.ip_address(ip_str)
+                    if (ip.is_loopback or 
+                        ip.is_private or 
+                        ip.is_link_local or 
+                        ip.is_reserved or 
+                        ip.is_multicast or 
+                        ip.is_unspecified):
+                        return False
+            except socket.gaierror:
+                return False
+                
+            return True
+        except Exception:
+            return False
+
     async def navigate(self, url: str, context: ExecutionContext = None) -> ExecutionReceipt:
         start = time.time()
         logs = [f"Navigating to {url}"]
         artifacts = []
+        
+        from config.settings import settings
+        if settings.BLOCK_SSRF and not self._is_ssrf_safe(url):
+            logger.error("browser_navigate_ssrf_blocked", url=url)
+            return ExecutionReceipt(
+                tool="browser_navigate",
+                status=ExecutionStatus.FAILED,
+                duration_ms=(time.time() - start) * 1000,
+                result=None,
+                artifacts=artifacts,
+                error_details="SSRF Protection: Access to local/private network resources is blocked."
+            )
         
         try:
             await self._ensure_browser()

@@ -53,6 +53,28 @@ class PolicyGate:
             tenant_controls=tenant_controls
         )
 
+        # 5. Overrides for Alpha Hardening (Phases 1-4 Implementation Plan)
+        from config.settings import settings
+        from schemas import Capability
+
+        if settings.FORCE_HITL_ALL_EXTERNAL_MUTATIONS:
+            # Read-only capabilities that are exempt from forced HITL under external mutations lock
+            READ_ONLY_CAPABILITIES = {
+                Capability.READ_DOCUMENT,
+                Capability.FIND_INFORMATION,
+                Capability.NAVIGATE_WEB,
+            }
+            # Check if any capability associated with this server is not read-only
+            has_mutations = any(cap not in READ_ONLY_CAPABILITIES for cap in manifest.capabilities)
+            if has_mutations:
+                logger.info(
+                    "policy_gate_force_hitl",
+                    server=manifest.server_id,
+                    reason="FORCE_HITL_ALL_EXTERNAL_MUTATIONS active and server has mutation capabilities",
+                    capabilities=[c.value for c in manifest.capabilities]
+                )
+                needs_hitl = True
+
         logger.info("policy_gate_approved", server=manifest.server_id, requires_hitl=needs_hitl)
         return PolicyOutcome(True, "Approved by governance policy.", requires_hitl=needs_hitl)
 

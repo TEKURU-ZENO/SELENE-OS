@@ -1,0 +1,131 @@
+version: "3.9"
+
+# ── SELENE OS — Docker Compose Stack ─────────────────────────────
+# Services: frontend, backend (API), worker (background), redis, postgres
+#
+# Usage:
+#   docker compose up --build        # Start all services
+#   docker compose up backend worker # Backend + worker only (no UI)
+#   docker compose logs -f backend   # Tail backend logs
+#
+# Environment:
+#   Copy backend/.env.example to backend/.env and fill in API keys.
+# ─────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── Redis 7 ──────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: selene_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ── PostgreSQL 16 (Phase 2+ — SQLite used in development) ────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: selene_postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: selene_db
+      POSTGRES_USER: selene
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-selene_alpha_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U selene -d selene_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ── SELENE Backend (FastAPI) ──────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: selene_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - REDIS_URL=redis://redis:6379/0
+      - POSTGRES_URL=postgresql+asyncpg://selene:${POSTGRES_PASSWORD:-selene_alpha_password}@postgres:5432/selene_db
+      - DATABASE_URL=sqlite+aiosqlite:///./selene.db  # Override to Postgres in prod
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend/data:/app/data                 # FAISS index persistence
+      - ./backend/replays:/app/replays           # Replay bundle storage
+      - ./backend/artifacts:/app/artifacts       # Execution artifacts
+      - ./backend/audit:/app/audit               # Audit log backups
+      - ./backend/exports:/app/exports           # .selene export bundles
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+
+  # ── SELENE Worker (background execution pool) ─────────────────────
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: selene_worker
+    command: python -m runtime.workers.worker_pool
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - REDIS_URL=redis://redis:6379/0
+      - POSTGRES_URL=postgresql+asyncpg://selene:${POSTGRES_PASSWORD:-selene_alpha_password}@postgres:5432/selene_db
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend/data:/app/data
+      - ./backend/artifacts:/app/artifacts
+    depends_on:
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── SELENE Frontend (Next.js) ─────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: selene_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_BACKEND_URL=http://backend:8000
+      - NODE_ENV=production
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+
+# ── Volumes ───────────────────────────────────────────────────────
+volumes:
+  redis_data:
+    driver: local
+  postgres_data:
+    driver: local

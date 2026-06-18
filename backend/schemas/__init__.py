@@ -509,6 +509,9 @@ class CriticVerdict(BaseModel):
     estimated_execution_cost: int = 0
     static_checks_passed: bool = True
     cognitive_checks_passed: bool = True
+    shannon_entropy: Optional[float] = None
+    perplexity: Optional[float] = None
+    js_divergence: Optional[float] = None
 
 
 # ══════════════════════════════════════════════════════════════════

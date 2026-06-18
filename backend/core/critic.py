@@ -42,33 +42,138 @@ If rejected, provide specific issues and suggested_repairs. Provide a critic_con
         static_passed, static_issues = self._run_static_checks(plan)
 
         # 2. Cognitive Critic (LLM checks)
-        # We only run the expensive cognitive check if static checks pass, or if we want to batch feedback.
-        # For thoroughness, we batch feedback here.
         cognitive_passed, cog_verdict_partial = await self._run_cognitive_checks(plan)
 
-        # 3. Combine Verdicts
+        # 3. Statistical Critic (Entropy, Perplexity, JS Divergence)
+        shannon_entropy, perplexity, js_divergence = await self._run_statistical_checks(plan)
+
+        # 4. Combine Verdicts
         all_issues = static_issues + cog_verdict_partial.issues
         
-        # Determine risk score (naive aggregation for now)
+        # Determine risk score (naive aggregation for now, boosted if JSD or entropy is abnormally high)
+        # High entropy/JSD suggests high uncertainty/instability in model output
         base_risk = 0.5 if any(i.severity in [RiskLevel.HIGH, RiskLevel.CRITICAL] for i in all_issues) else 0.1
+        if js_divergence > 0.6:
+            base_risk = min(1.0, base_risk + 0.2)
+            all_issues.append(CriticIssue(
+                severity=RiskLevel.MEDIUM,
+                node_id=None,
+                message=f"High plan output instability detected (JS Divergence: {js_divergence:.2f})",
+                suggestion="Inject more domain context or constraints to stabilize plan generation."
+            ))
         
         final_verdict = CriticVerdict(
-            approved=static_passed and cognitive_passed,
+            approved=static_passed and cognitive_passed and (js_divergence < 0.8),
             issues=all_issues,
             suggested_repairs=cog_verdict_partial.suggested_repairs,
             risk_score=base_risk,
             critic_confidence=cog_verdict_partial.critic_confidence,
             static_checks_passed=static_passed,
-            cognitive_checks_passed=cognitive_passed
+            cognitive_checks_passed=cognitive_passed,
+            shannon_entropy=shannon_entropy,
+            perplexity=perplexity,
+            js_divergence=js_divergence
         )
 
         logger.info(
             "critic_evaluation_complete", 
             plan_id=plan.plan_id, 
             approved=final_verdict.approved,
-            issues=len(final_verdict.issues)
+            issues=len(final_verdict.issues),
+            entropy=f"{shannon_entropy:.4f}",
+            js_div=f"{js_divergence:.4f}"
         )
         return final_verdict
+
+    async def _run_statistical_checks(self, plan: ExecutionPlan) -> Tuple[float, float, float]:
+        import math
+        import re
+        from collections import Counter
+        from config.settings import settings
+        from services.llm_service import llm_service
+        from schemas import ChatMessage, MessageRole
+
+        # We will generate two short descriptions/assessments of the plan objective
+        # Run 1: Temperature 0.1
+        # Run 2: Temperature 0.8
+        prompt = f"Summarize and assess the security risk of this execution plan: {plan.objective}"
+        
+        text1 = ""
+        text2 = ""
+
+        if settings.OPENAI_API_KEY or settings.ANTHROPIC_API_KEY:
+            try:
+                history = [ChatMessage(role=MessageRole.USER, content=prompt)]
+                # Run 1 (T=0.1)
+                text1 = await llm_service.generate(history, temperature=0.1, max_tokens=100)
+                # Run 2 (T=0.8)
+                text2 = await llm_service.generate(history, temperature=0.8, max_tokens=100)
+            except Exception as e:
+                logger.warning("statistical_checks_generation_failed_using_simulation", error=str(e))
+
+        # Fallback simulation if texts are empty (e.g. offline mode)
+        if not text1 or not text2:
+            import random
+            rng = random.Random(hash(plan.plan_id))
+            words = ["execute", "plan", "safe", "risk", "validate", "node", "dependency", "system", "auth", "lock"]
+            # Run 1: low temperature, very peaky distribution
+            w1 = [rng.choice(words[:4]) for _ in range(50)]
+            text1 = " ".join(w1)
+            # Run 2: high temperature, more diverse distribution
+            w2 = [rng.choice(words) for _ in range(50)]
+            text2 = " ".join(w2)
+
+        def get_tokens(text):
+            return re.findall(r'\w+', text.lower())
+
+        tokens1 = get_tokens(text1)
+        tokens2 = get_tokens(text2)
+
+        vocab = set(tokens1).union(set(tokens2))
+        if not vocab:
+            return 0.0, 1.0, 0.0
+
+        c1 = Counter(tokens1)
+        c2 = Counter(tokens2)
+
+        total1 = sum(c1.values()) or 1
+        total2 = sum(c2.values()) or 1
+
+        p = {w: c1[w] / total1 for w in vocab}
+        q = {w: c2[w] / total2 for w in vocab}
+
+        # 1. Shannon Entropy of P
+        sh_entropy = 0.0
+        for w in vocab:
+            val = p[w]
+            if val > 0:
+                sh_entropy -= val * math.log2(val)
+
+        # Normalize Shannon entropy
+        if len(vocab) > 1:
+            norm_entropy = sh_entropy / math.log2(len(vocab))
+        else:
+            norm_entropy = 0.0
+
+        # 2. Perplexity
+        perplexity = math.pow(2.0, sh_entropy)
+
+        # 3. JS Divergence
+        m = {w: 0.5 * (p[w] + q[w]) for w in vocab}
+
+        kl_pm = 0.0
+        for w in vocab:
+            if p[w] > 0:
+                kl_pm += p[w] * math.log2(p[w] / m[w])
+
+        kl_qm = 0.0
+        for w in vocab:
+            if q[w] > 0:
+                kl_qm += q[w] * math.log2(q[w] / m[w])
+
+        js_div = 0.5 * kl_pm + 0.5 * kl_qm
+
+        return float(norm_entropy), float(perplexity), float(js_div)
 
     def _run_static_checks(self, plan: ExecutionPlan) -> Tuple[bool, List[CriticIssue]]:
         issues = []

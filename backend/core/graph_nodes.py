@@ -46,10 +46,33 @@ def node_intent(state: SeleneState) -> SeleneState:
     return state
 
 
+# Store retrieved context bundles globally to keep state footprint minimal
+retrieved_contexts: Dict[str, Any] = {}
+
 # ── 2. Context Node ───────────────────────────────────────────────
 def node_context(state: SeleneState) -> SeleneState:
     logger.info("node_context", task_id=state.get("task_id"))
-    state["context_bundle_ref"] = f"ctx_{uuid.uuid4().hex}"
+    
+    # Reconstruct IntentResult from state
+    from schemas import IntentResult, IntentType, ModeType, ContextBundle
+    intent_data = state.get("intent", {})
+    intent_val = intent_data.get("intent_type", "task")
+    mode_val = intent_data.get("mode", "HYBRID")
+    
+    intent_res = IntentResult(
+        intent=IntentType(intent_val),
+        mode=ModeType(mode_val),
+        confidence=intent_data.get("confidence", 1.0),
+        needs_clarification=intent_data.get("needs_clarification", False)
+    )
+    
+    # Retrieve context bundle from memory manager
+    bundle = memory_manager.fetch_context(state["user_query"], state["session_id"], intent_res)
+    
+    ref = f"ctx_{uuid.uuid4().hex}"
+    retrieved_contexts[ref] = bundle
+    
+    state["context_bundle_ref"] = ref
     state["graph_depth"] += 1
     return state
 
@@ -58,8 +81,11 @@ def node_context(state: SeleneState) -> SeleneState:
 async def node_planner(state: SeleneState) -> SeleneState:
     logger.info("node_planner", task_id=state.get("task_id"), repair_count=state.get("repair_count", 0))
     
+    # Fetch retrieved context bundle
     from schemas import ContextBundle
-    bundle = ContextBundle(session_id=state["session_id"])
+    bundle = retrieved_contexts.get(state.get("context_bundle_ref"))
+    if not bundle:
+        bundle = ContextBundle(session_id=state["session_id"])
     
     # Phase 9: Adaptive Planning Hook
     # Fetch procedural memory and extract constraints

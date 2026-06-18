@@ -32,6 +32,16 @@ class EpisodicStore:
         )
         self._memories.append(mem)
         logger.debug("episodic_memory_added", event_type=event_type)
+        
+        # Async background sync to vector store
+        from memory.vector_store import vector_store
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(vector_store.add(content, {"type": "episodic", "event_type": event_type, "importance": importance, "tags": tags or []}))
+        except RuntimeError:
+            pass
+            
         return mem
 
     def get_recent(self, limit: int = 10) -> List[EpisodicMemory]:
@@ -77,6 +87,16 @@ class SemanticStore:
             )
             self._memories[fact_hash] = mem
             logger.debug("semantic_memory_added", content=content[:30])
+            
+            # Async background sync to vector store
+            from memory.vector_store import vector_store
+            import asyncio
+            try:
+                loop = asyncio.get_running_loop()
+                loop.create_task(vector_store.add(content, {"type": "semantic", "confidence": confidence, "importance": importance, "tags": tags or []}))
+            except RuntimeError:
+                pass
+                
             return mem
 
     def search(self, query: str, limit: int = 5) -> List[SemanticMemory]:
@@ -99,6 +119,16 @@ class ProceduralStore:
         )
         self._memories.append(mem)
         logger.info("procedural_memory_added", trigger=trigger_context)
+        
+        # Async background sync to vector store
+        from memory.vector_store import vector_store
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(vector_store.add(trigger_context, {"type": "procedural", "importance": importance}))
+        except RuntimeError:
+            pass
+            
         return mem
 
     def search(self, context_query: str, limit: int = 3) -> List[ProceduralMemory]:

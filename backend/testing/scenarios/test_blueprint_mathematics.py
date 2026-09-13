@@ -15,7 +15,8 @@ import numpy as np
 from datetime import datetime, timedelta
 from schemas import (
     ExecutionPlan, CriticVerdict, ObjectiveGroup, PlanNode, 
-    Capability, TaskState, RiskLevel, IntentResult, IntentType, ModeType
+    Capability, TaskState, RiskLevel, IntentResult, IntentType, ModeType,
+    OrganizationalMemoryTier
 )
 from memory.vector_store import VectorStore, BM25Index, BGEReranker, tokenize
 from core.critic import critic_engine
@@ -204,6 +205,25 @@ async def test_stratification_and_decay():
 
 async def test_sandbox_microvm():
     logger.info("TEST 5: Sandbox E2B MicroVM and Subprocess Fallback")
+
+    from mcp.registry.server_registry import server_registry
+    from mcp.schemas import MCPServerManifest, TrustClassification, TransportType
+    
+    server_registry.register_server(
+        MCPServerManifest(
+            server_id="mutation_server",
+            name="Mutation Server",
+            version="1.0.0",
+            transport=TransportType.STDIO,
+            capabilities=[Capability.EXECUTE_CODE],
+            trust_classification=TrustClassification.VERIFIED_SAFE,
+            risk_level=RiskLevel.LOW,
+            memory_scope=OrganizationalMemoryTier.PERSONAL,
+            allowed_contexts=["*"],
+            requires_hitl=False,
+            enabled=True
+        )
+    )
 
     # Test code execution capability
     params = {

@@ -27,12 +27,13 @@ class DistributedTaskQueue:
             logger.warning("idempotent_execution_detected", key=node.idempotency_key)
             return "ALREADY_ENQUEUED"
             
+        status = TaskState.WAITING_HITL.value if node.requires_confirmation else TaskState.PENDING.value
         payload = {
             "job_id": job_id,
             "tenant_id": tenant_id,
             "trace_id": trace_id,
             "node": node.model_dump(),
-            "status": TaskState.PENDING.value,
+            "status": status,
             "enqueued_at": time.time()
         }
         
@@ -41,6 +42,20 @@ class DistributedTaskQueue:
             
         self._streams[tenant_id].append(payload)
         logger.info("task_enqueued", job_id=job_id, capability=node.capability)
+
+        # Register in the execution store for persistence and tracking
+        from runtime.execution_store import execution_store
+        execution_store.register_job(
+            job_id=job_id,
+            capability=node.capability.value if hasattr(node.capability, "value") else str(node.capability),
+            mcp_server_id=node.params.get("mcp_server_id") or node.affinity_group or "github_mcp_core",
+            status=status,
+            params=node.params,
+            session_id=None,
+            task_id=node.id,
+            hitl_required=node.requires_confirmation
+        )
+
         return job_id
 
     def claim_task(self, tenant_id: str, worker_id: str, capability_group: str) -> Optional[Dict[str, Any]]:
@@ -85,9 +100,22 @@ class DistributedTaskQueue:
             del self._leases[job_id]
             logger.warning("lease_revoked", job_id=job_id)
 
+    def set_task_status(self, job_id: str, status: str, params: dict = None) -> bool:
+        """Updates status and parameters of a task in the stream (useful for HITL approvals)."""
+        for tenant_id, stream in self._streams.items():
+            for task in stream:
+                if task["job_id"] == job_id:
+                    task["status"] = status
+                    if params:
+                        task["node"]["params"].update(params)
+                    logger.info("task_status_updated", job_id=job_id, status=status)
+                    return True
+        return False
+
     def _is_idempotency_key_used(self, key: str) -> bool:
         # Mock check
         return False
 
 # Singleton Mock
 task_queue = DistributedTaskQueue()
+

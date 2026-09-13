@@ -93,9 +93,11 @@ def build_graph() -> StateGraph:
     workflow.add_edge("reflection", "memory")
     workflow.add_edge("memory", END)
 
-    app = workflow.compile()
+    from langgraph.checkpoint.memory import MemorySaver
+    checkpointer = MemorySaver()
+    app = workflow.compile(checkpointer=checkpointer)
     
-    logger.info("langgraph_compiled", nodes=len(workflow.nodes))
+    logger.info("langgraph_compiled_with_checkpointer", nodes=len(workflow.nodes))
     return app
 
 # Singleton

@@ -1,27 +1,42 @@
-# 🌙 SELENE OS — Alpha Known Limitations
+# Known Limitations in SELENE OS (Alpha)
 
-*Version: v0.1.3 (Alpha Operational Freeze)*
+## 1. Overview
+As SELENE OS is currently in an Alpha stage (v0.1.3), several architectural, functional, and environment-specific limitations exist. This document tracks these known issues to inform developers and operators.
 
-This is not a marketing document. This is an operational reality check. Do not mistake the following limitations for architectural flaws; they are the intentional bounds of the alpha deployment.
+## 2. Vector Store Persistence
+- **Limitation**: The FAISS vector store is entirely in-memory.
+- **Impact**: Upon application restart, the index must be rebuilt from the PostgreSQL database. This increases startup time significantly as the dataset grows.
+- **Workaround**: We plan to migrate to pgvector or Milvus for persistent embeddings in the Beta release.
 
-## ⚠️ 1. Unsupported Workflows
-*   **Multi-Agent Swarming**: SELENE currently operates as a singular, governed cognitive entity. It does not spawn sub-agents to solve parallel tasks.
-*   **Long-Running Autonomous Loops**: The orchestrator is explicitly configured to cap planning loops to 5 steps to prevent runaway resource consumption.
-*   **Live Database Mutations**: Database connections are strictly `READ_ONLY` in alpha. Any `WRITE` attempt will trigger an automatic governance denial.
+## 3. External API Dependencies
+- **Embeddings**: Generating embeddings requires an active `OPENAI_API_KEY`. If absent, the system falls back to zero vectors, destroying semantic search capabilities.
+- **E2B Sandbox**: The Execution Sandbox (Layer 7) relies on the `E2B_API_KEY`. While a local subprocess fallback exists, it is limited to a 30s timeout and lacks containerized isolation.
 
-## 🔌 2. Unstable Connectors
-*   **Slack MCP**: The `send_direct_message` capability occasionally times out due to async event loop mismatches. This triggers the Cascading Fallback logic.
-*   **Jira MCP**: Context compression struggles with Jira issues containing over 50 comments, potentially triggering an Attention Fatigue denial.
+## 4. Model Loading Overhead
+- **BGE Reranker**: On first startup, the Context Engine downloads the `BAAI/bge-reranker-base` model (~400MB) from HuggingFace. This delays readiness probes.
+- **Impact**: Deployments in air-gapped environments or those with slow internet connections will experience delayed startup.
 
-## 🔄 3. Known Replay Edge Cases
-*   **Asynchronous Race Conditions**: If a human interrupts (HITL) at the exact millisecond a fallback is activated, the Replay Integrity Hash will fail, resulting in a false `PROVENANCE COMPROMISED` lockdown. This is a known UI sync issue, not a core security breach.
-*   **.selene Bundle Size**: Extremely long traces may generate `.selene` export bundles exceeding 5MB, which the frontend currently struggles to parse in real-time.
+## 5. Architectural Scalability
+- **Single-Process Limitation**: The current orchestration state machine (LangGraph) and memory management operate within a single process.
+- **Impact**: The application cannot be horizontally scaled without introducing state inconsistencies in memory layers.
 
-## 🛑 4. False-Positive Governance Conditions
-*   **Aggressive Context Firewalls**: The current policy gate (`release_workflow`) is overly strict. If you ask SELENE to draft a release note that casually references a marketing asset, it may trigger a Cross-Domain Blocked denial.
-*   **Attention Fatigue Escalation**: The system penalizes rapid context switching. If you rapidly switch tabs during a test session, SELENE will assume cognitive overload and suppress proactive suggestions. 
+## 6. Security and Authentication
+- **No Authentication**: The Alpha release lacks user authentication (e.g., JWT). All endpoints are open.
+- **Frontend**: The Next.js frontend acts as a read-only demo and cannot create new sessions securely.
+- **Governance Layer**: While Layer 8 blocks SSRF and shell commands, advanced prompt injections have not been fully mitigated.
 
-## ⚖️ 5. Degraded-Trust Behaviors
-If SELENE enters a "Degraded Trust" state (e.g., due to repeated fallback routing):
-*   It will automatically mandate HITL for *all* external interactions, even read-only APIs.
-*   Expect a massive increase in interruption frequency during degraded states.
+## 7. Memory Management
+- **Transient Conversation History**: Conversation history across restarts is not fully persistent. The episodic and working memory layers do not reliably restore state after a reboot.
+- **Memory Decay**: The exponential temporal decay function ($\lambda=0.01$) needs extensive tuning, as memories currently fade too rapidly.
+
+## 8. Windows-Specific Issues
+For developers operating on Windows:
+- **CRLF Warnings**: Git checkouts may produce CRLF line-ending warnings affecting bash scripts in the `sandbox/` environment.
+- **Pycache Noise**: `__pycache__` directories may occasionally interfere with hot-reloading in the backend.
+
+## 9. Dependency Warnings
+- **Pydantic V1 Compatibility**: Python 3.14 environments throw Pydantic V1 compatibility warnings due to upstream dependencies in LangChain/LangGraph.
+- **Resolution**: A refactor to Pydantic V2 is scheduled for the Beta cycle.
+
+## 10. HitL Constraints
+The Human-in-the-Loop (HitL) mutation lock pauses the LangGraph execution. If the human operator does not respond within the Redis timeout window (1 hour), the task is discarded without a grace period.

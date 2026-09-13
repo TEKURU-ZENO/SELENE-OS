@@ -62,24 +62,21 @@ class Orchestrator:
             # In a true async environment, we'd run this concurrently and read from the event_queue.
             # Here we loop over the graph state stream and publish UI events.
             
-            async for state_patch in graph_supervisor.execute_supervised(initial_state):
-                # Identify which node just ran (LangGraph astream yields {node_name: state_patch})
-                for node_name, updated_state in state_patch.items():
-                    if isinstance(updated_state, dict):
-                        # Publish UI status via Event Adapter
-                        graph_event_adapter.publish_state_update(session_id, node_name, updated_state)
-                        
-                        # Forward any events from the EventBus to the SSE stream via Coalescer
-                        while not event_queue.empty():
-                            event = event_queue.get_nowait()
-                            event_coalescer.push(event)
-                            
-                        if event_coalescer.should_flush(session_id):
-                            coalesced = event_coalescer.flush(session_id)
-                            for evt in coalesced:
-                                yield self._sse_event(evt.type.value, evt.payload)
+            async for node_name, state_patch in graph_supervisor.execute_supervised(initial_state):
+                # Publish UI status via Event Adapter
+                graph_event_adapter.publish_state_update(session_id, node_name, state_patch)
+                
+                # Forward any events from the EventBus to the SSE stream via Coalescer
+                while not event_queue.empty():
+                    event = event_queue.get_nowait()
+                    event_coalescer.push(event)
+                    
+                if event_coalescer.should_flush(session_id):
+                    coalesced = event_coalescer.flush(session_id)
+                    for evt in coalesced:
+                        yield self._sse_event(evt.type.value, evt.payload)
 
-                if state_patch.get("halted") or any(v.get("halted") for v in state_patch.values() if isinstance(v, dict)):
+                if state_patch.get("halted"):
                     break
 
             # Final flush of the event queue and coalescer

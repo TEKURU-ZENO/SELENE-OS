@@ -1,24 +1,93 @@
-# 🕵️‍♂️ Replay Forensics
+# Replay Forensics
 
-This document defines the structural mechanics of the SELENE Replay System and the `.selene` bundle format.
+## 1. Introduction
 
-## 1. Replay Structure
-Replays are not raw token streams; they are structured Directed Acyclic Graph (DAG) traces detailing the exact cognitive steps taken by the Planner, the Critic, and the Execution Engine.
+The Replay Forensics system is a core component of SELENE's operational transparency. It enables post-hoc analysis of cognitive decisions by capturing the exact LangGraph state at every node transition across the 10 Architectural Layers.
 
-## 2. Provenance Hashing
-Every execution receipt is hashed using SHA-256 before being attached to the `ExecutionReceipt` object in memory. 
-`hash(payload + timestamp + trust_classification + environment_state)`
-This ensures tamper detection. If an external system or man-in-the-middle alters the receipt before it hits the Event Bus, the frontend will trigger a `PROVENANCE COMPROMISED` lockdown.
+The primary purpose is to trace *why* SELENE took a specific action, validate Layer 6 Critic statistics (Entropy, JS Divergence), and provide regression detection via Golden Traces.
 
-## 3. The `.selene` Bundle Structure
-A `.selene` file is a JSON payload containing the entire forensic snapshot of a session. It includes:
-*   `replay_schema_version`: e.g., "1.0.0"
-*   `runtime_version`: e.g., "selene-alpha-0.1.3"
-*   `trace_classification`: "nominal", "adversarial", "forensic", "governance_failure"
-*   `provenance_hash`: The root hash of the session trace.
-*   `governance_snapshot`: The exact policies active during execution.
-*   `redaction_summary`: Confirmation of PII stripping.
-*   `replay_manifest`: The list of `CognitiveStep` objects.
+## 2. Trace Format and Structure
 
-## 4. Redaction Pipeline
-Before a `.selene` bundle is generated, the Redaction Pipeline scrubs sensitive keys, PII, and raw file payloads, leaving only the structural metadata necessary for forensic replay.
+Traces are serialized snapshots of the `SeleneState` TypedDict defined in `backend/core/graph_state.py`. 
+Each trace payload consists of:
+
+```json
+{
+  "trace_id": "uuid4",
+  "session_id": "user_session",
+  "timestamp": "ISO8601",
+  "node": "planner",
+  "state_diff": {
+    "intent": "Decomposed intent data...",
+    "plan": ["Step 1", "Step 2"],
+    "critic_scores": {
+      "entropy": 0.45,
+      "perplexity": 1.36,
+      "js_divergence": 0.12
+    }
+  },
+  "llm_calls": [
+    {
+      "provider": "openai",
+      "model": "gpt-4-turbo",
+      "prompt_tokens": 450,
+      "completion_tokens": 120,
+      "latency_ms": 850
+    }
+  ]
+}
+```
+
+## 3. Capturing Traces
+
+Traces are emitted asynchronously by the Orchestrator (`backend/core/orchestrator.py`) using LangGraph's built-in state checking capability, wrapped in a forensic logger.
+
+All transitions between nodes (e.g., `intent` → `context` → `planner`) trigger a trace capture, persisted in the PostgreSQL `forensic_traces` table.
+
+## 4. Replaying and Analyzing Traces
+
+Operators can replay a trace to simulate the cognitive flow:
+
+```bash
+# Replay a specific trace ID to debug a node failure
+python -m selene.cli replay --trace-id f47ac10b-58cc-4372-a567-0e02b2c3d479
+```
+
+During a replay, external side-effects (Layer 7 sandbox execution) are mocked using the recorded outputs from the original trace, ensuring idempotency.
+
+### 4.1 Statistical Analysis of Traces
+
+Using Layer 6 mathematical guarantees, forensics can identify hallucinations. If a plan failed, operators can check the JS divergence between the intended action ($P$) and the executed action ($Q$) distribution:
+$$ D_{JS}(P || Q) = \frac{1}{2} D_{KL}(P || M) + \frac{1}{2} D_{KL}(Q || M) $$
+where $M = \frac{1}{2}(P+Q)$. A divergence $> 0.2$ usually indicates the agent diverged from the user's intent.
+
+## 5. Golden Trace Validation
+
+A Golden Trace is an idealized execution path for a benchmark task. During CI/CD pipelines, SELENE's current performance is compared against Golden Traces.
+
+### 5.1 Comparing Traces for Regression Detection
+
+When code changes (e.g., updating the RRF 70/30 hybrid search logic in `backend/memory/vector_store.py`), the CI pipeline runs a regression check:
+
+1. Executes a benchmark query.
+2. Captures the generated Trace $T_{new}$.
+3. Compares $T_{new}$ against Golden Trace $T_{gold}$.
+4. If structural similarity $< 0.95$ (cosine similarity of state embeddings), the build fails.
+
+## 6. Integration with CI/CD Pipelines
+
+In `testing/run_forensics.sh`, the pipeline asserts trace stability:
+```yaml
+test_forensics:
+  stage: test
+  script:
+    - pytest backend/testing/test_forensics.py --run-golden-comparisons
+    - python -m scripts.validate_entropy_bounds
+```
+
+## 7. Code References
+
+- **State Definition**: `backend/core/graph_state.py`
+- **Trace Persistence**: `backend/memory/memory_manager.py`
+- **Forensic API**: `/api/v1/forensics/traces` in `backend/main.py`
+- **Validation**: `backend/testing/test_forensics.py`

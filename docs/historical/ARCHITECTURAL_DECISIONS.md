@@ -1,21 +1,102 @@
-# 🏛️ Architectural Decision Records (ADRs)
+# Architectural Decision Records (ADRs)
 
-This document logs the "why" behind major structural decisions in SELENE.
+This document tracks the crucial architectural decisions made during the design and development of SELENE OS.
 
-## ADR-001: Separation of Planner and Executor
-*   **Context**: LLMs cannot be trusted to self-regulate external tool usage natively.
-*   **Decision**: Introduced the `CapabilityAdapter` and `PolicyGate`. Planners output abstract capabilities; the runtime handles the concrete MCP execution.
-*   **Tradeoff**: Increased latency and system complexity.
-*   **Implication**: Enables deterministic governance and tamper-evident replays.
+---
 
-## ADR-014: Reflection Engine Constraints
-*   **Context**: Procedural memory drift occurs if models continually overwrite their own rules.
-*   **Decision**: The Reflection Engine cannot directly write to Procedural Memory. All procedural updates must pass an `ACCEPTED` state threshold or a human audit.
-*   **Tradeoff**: Slower autonomous learning.
-*   **Implication**: Prevents ungoverned cognitive drift.
+## ADR-001: LangGraph over Autogen/CrewAI
 
-## ADR-023: Provenance Hashing
-*   **Context**: Demos and execution traces must be verifiable.
-*   **Decision**: All `ExecutionReceipts` are hashed before hitting the orchestrator.
-*   **Tradeoff**: Overhead in serialization.
-*   **Implication**: Eliminates silent failures and allows the Trust Dashboard to visually lock down if memory is tampered with.
+**Status:** Accepted
+**Context:** SELENE required a framework to orchestrate complex multi-agent workflows and cognitive loops. Existing frameworks like Autogen or CrewAI were considered.
+**Decision:** We chose LangGraph as the core orchestration engine (Layer 5).
+**Consequences:** 
+- Provides highly deterministic routing via conditional edges.
+- Enforces strict state management using `TypedDict` (`SeleneState`), eliminating state drift.
+- Allows fine-grained visualization of the cognitive nodes (intent, plan, critic, execute, etc.).
+- Requires slightly more boilerplate than higher-level frameworks but offers absolute control over the graph topology.
+
+---
+
+## ADR-002: FAISS over Pinecone/Weaviate
+
+**Status:** Accepted
+**Context:** Layer 3 (Context Engine) needed a vector database to perform dense embeddings search for semantic memory retrieval.
+**Decision:** We selected Meta's FAISS (Facebook AI Similarity Search) over managed SaaS alternatives (Pinecone) or heavier self-hosted systems (Weaviate).
+**Consequences:**
+- Zero-cost, in-process execution natively in Python.
+- No network latency or external dependency for core memory operations.
+- Requires managing local index persistence on disk, handled seamlessly via our volume mounts.
+- Extremely fast for the scale of personal OS context windows.
+
+---
+
+## ADR-003: RRF Fusion over Simple Vector Search
+
+**Status:** Accepted
+**Context:** Relying solely on dense embeddings (FAISS) often missed exact keyword matches (e.g., variable names, specific IDs).
+**Decision:** We implemented a Hybrid Search architecture using Reciprocal Rank Fusion (RRF). We combine FAISS (dense) and BM25 (sparse lexical search), weighted via RRF (α=0.7 dense, 0.3 sparse).
+**Consequences:**
+- Drastically improved recall across both conceptual queries and exact term lookups.
+- Requires maintaining two separate indexes (BM25 token index and FAISS vector index).
+- Slightly increased computational overhead, offset by the massive boost in retrieval accuracy, especially when followed by `BAAI/bge-reranker-base`.
+
+---
+
+## ADR-004: E2B over Direct Subprocess
+
+**Status:** Accepted
+**Context:** The AI agent (Layer 7) needs the ability to execute generated code to solve tasks, which presents severe security risks if run directly on the host machine.
+**Decision:** We integrated E2B cloud microVMs as the primary execution sandbox.
+**Consequences:**
+- Maximum security isolation (network, compute, filesystem) from the host environment.
+- Eliminates the risk of the agent accidentally deleting workspace files or exposing secrets.
+- Introduces an external API dependency and potential latency.
+- *Mitigation:* We implemented a local subprocess fallback with strict 30s timeouts and Governance blocking rules for offline/degraded environments.
+
+---
+
+## ADR-005: 5-Layer Memory Stratification
+
+**Status:** Accepted
+**Context:** Standard RAG pipelines treat all information equally, leading to bloated context windows and forgotten immediate instructions.
+**Decision:** We adopted a 5-layer stratified memory system inspired by human cognitive psychology: working (≤1hr), episodic (≤24hr), semantic (≤7d), procedural (≤30d), and archival (>30d).
+**Consequences:**
+- Context injection is highly relevant to the temporal dimension of the task.
+- Requires a background cron worker to apply exponential time-decay mathematics (`score × exp(-λ·Δt_hours)`) to demote memory records across layers over time.
+- Highly efficient context windows that stay strictly within LLM token limits.
+
+---
+
+## ADR-006: Shannon Entropy for Critic Validation
+
+**Status:** Accepted
+**Context:** The system needed an automated, mathematical way to detect if the LLM was hallucinating or highly uncertain before executing risky plans.
+**Decision:** We implemented Layer 6 (Critic Agent) using information-theoretic metrics. It evaluates Shannon entropy `H(p) = -Σ p_i·log₂(p_i)`, perplexity, and Jensen-Shannon divergence to score output distributions.
+**Consequences:**
+- Provides a statistically sound threshold for validation rather than relying purely on a second "LLM judge" prompt.
+- If entropy is too high, the system automatically loops back to Layer 4 (Planner) for a safer approach or invokes Layer 8 (HITL).
+- Requires access to logprobs from the LLM provider, limiting full functionality to providers that expose token probabilities (e.g., OpenAI, local vLLM).
+
+---
+
+## ADR-007: FastAPI over Flask/Django
+
+**Status:** Accepted
+**Context:** The API ingress router (Layer 0) required a modern, highly concurrent web framework.
+**Decision:** We selected FastAPI.
+**Consequences:**
+- Async-native architecture perfectly complements concurrent LLM requests and WebSocket streaming.
+- Automatic generation of OpenAPI schemas.
+- Deep integration with Pydantic, enforcing strict schema validation out-of-the-box for `SeleneState` and intents.
+
+---
+
+## ADR-008: PostgreSQL + Redis over MongoDB
+
+**Status:** Accepted
+**Context:** We needed storage solutions for user data, session states, and rate-limiting.
+**Decision:** We chose a relational architecture (PostgreSQL) paired with in-memory caching (Redis), instead of a NoSQL document store (MongoDB).
+**Consequences:**
+- PostgreSQL guarantees relational integrity for complex user-role-permission structures and workflow pack tracking.
+- Redis handles sliding-window rate limiting, WebSocket pub/sub, and ephemeral state caching efficiently.
+- Standardized via `docker-compose.yml` for easy deployment.

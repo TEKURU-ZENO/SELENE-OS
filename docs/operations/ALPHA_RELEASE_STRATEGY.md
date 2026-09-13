@@ -1,315 +1,69 @@
-# SELENE OS — Internal Alpha Release Strategy
-
-## Objective
-
-Move SELENE from a desktop-local architecture freeze into a controlled Internal Alpha deployment without compromising governance, trust guarantees, or operational stability.
-
----
-
-# Phase 1 — Local Stabilization (1–2 Days)
-
-Before exposing SELENE to even a few operators, stabilize the local runtime.
-
-## Tasks
-
-### Backend
-
-* Freeze Python dependencies:
-
-  ```bash
-  pip freeze > requirements-lock.txt
-  ```
-* Add `.env.example`
-* Separate secrets from code
-* Enable structured rotating logs
-* Ensure Redis/Postgres boot reliably
-
-### Frontend
-
-* Build production bundle:
-
-  ```bash
-  npm run build
-  ```
-* Verify SSE reconnect behavior
-* Verify replay rendering in production mode
-
-### Infrastructure
-
-* Create:
-
-  * `/artifacts`
-  * `/replays`
-  * `/audit`
-  * `/exports`
-* Ensure `.selene` exports persist safely
-
----
-
-# Phase 2 — Containerization (Strongly Recommended)
-
-Do NOT deploy directly from your desktop runtime.
-
-Containerize the platform first.
-
-## Suggested Architecture
-
-### Docker Compose Stack
-
-Services:
-
-* frontend (Next.js)
-* backend (FastAPI)
-* redis
-* postgres
-* worker
-* nginx (optional)
-
-## Minimal Deployment Layout
-
-```yaml
-services:
-  frontend:
-    build: ./frontend
-    ports:
-      - "3000:3000"
-
-  backend:
-    build: ./backend
-    ports:
-      - "8000:8000"
-
-  redis:
-    image: redis:7
-
-  postgres:
-    image: postgres:16
-
-  worker:
-    build: ./backend
-    command: python -m runtime.worker
-```
-
-## Why Containerize?
-
-Because SELENE depends on:
-
-* deterministic replay
-* distributed execution
-* reproducible runtime state
-* stable governance behavior
-
-Containers guarantee:
-
-* reproducibility
-* deployment parity
-* rollback safety
-* easier debugging
-
----
-
-# Phase 3 — Internal Alpha Infrastructure
-
-## Recommended Hosting
-
-### Cheap + Fast Setup
-
-| Layer          | Recommendation            |
-| -------------- | ------------------------- |
-| Frontend       | Vercel                    |
-| Backend        | Railway / Render / Fly.io |
-| Redis          | Upstash Redis             |
-| Postgres       | Neon / Supabase           |
-| Object Storage | Cloudflare R2             |
-
-This is enough for alpha.
-
----
-
-# Phase 4 — Security Hardening Before Humans
-
-## Absolute Requirements
-
-### 1. Disable Dangerous Execution
-
-Until fully audited:
-
-* NO unrestricted shell execution
-* NO autonomous writes
-* NO unrestricted filesystem access
-
-### 2. Force HITL
-
-Set:
-
-```python
-FORCE_HITL_ALL_EXTERNAL_MUTATIONS = True
-```
-
-for alpha.
-
-### 3. Connector Isolation
-
-Do not expose:
-
-* personal Slack
-* personal GitHub
-* production repos
-
-Use:
-
-* sandbox orgs
-* fake repos
-* dedicated test workspaces
-
----
-
-# Phase 5 — Internal Operator Deployment
-
-## Recommended Group Size
-
-Start with:
-
-```text
-5–10 operators
-```
-
-Do NOT scale wider yet.
-
-## Operator Types
-
-You want:
-
-| Operator Type            | Why                          |
-| ------------------------ | ---------------------------- |
-| Technical engineer       | Finds system flaws           |
-| Non-technical user       | Finds UX confusion           |
-| Skeptical user           | Finds trust gaps             |
-| Fast multitasker         | Tests attention fatigue      |
-| Security-minded operator | Tests governance assumptions |
-
----
-
-# Phase 6 — Operational Workflow
-
-## Create a Private Alpha Discord/Slack
-
-Channels:
-
-```text
-#trust-incidents
-#governance-confusion
-#replay-analysis
-#false-denials
-#operator-feedback
-```
-
-This becomes the real telemetry layer.
-
----
-
-# Phase 7 — Deployment Branding
-
-Do NOT market SELENE as:
-
-* AGI
-* autonomous superintelligence
-* self-evolving AI
-
-Position it as:
-
-```text
-Governed Cognitive Infrastructure
-```
-
-and:
-
-```text
-Explainable Cognitive Runtime
-```
-
-This framing aligns with the actual architecture.
-
----
-
-# Phase 8 — What NOT To Do
-
-## Avoid These Mistakes
-
-### ❌ Public launch too early
-
-You do not yet want internet-scale chaos.
-
-### ❌ Plugin marketplace immediately
-
-Governance needs real telemetry first.
-
-### ❌ Autonomous execution demos
-
-Your moat is restraint, not recklessness.
-
-### ❌ Benchmark obsession
-
-Your differentiation is trust + replay + governance.
-
----
-
-# Phase 9 — The Ideal Alpha Flow
-
-## Recommended Timeline
-
-### Week 1
-
-Internal operators only
-
-### Week 2
-
-Connector stabilization
-
-### Week 3
-
-Workflow pack tuning
-
-### Week 4
-
-Governance calibration
-
-### Week 5
-
-Replay export auditing
-
-### Week 6
-
-Decision:
-
-* private beta
-* or extended alpha
-
----
-
-# Phase 10 — Success Criteria
-
-SELENE Alpha succeeds IF:
-
-* Operators understand interruptions
-* Replay traces become useful
-* Governance denials feel rational
-* HITL modifications feel seamless
-* Trust increases over time
-* Users understand WHY actions occurred
-
-NOT if:
-
-* it automates everything
-* it acts autonomously
-* it feels magical
-
----
-
-# Final Operational Principle
-
-```text
-SELENE should feel disciplined, not impressive.
-```
-
-That is the moat.
+# Alpha Release Strategy: SELENE OS v0.1.3
+
+## 1. Executive Summary
+This document outlines the strategy for the Alpha v0.1.3 release of SELENE OS. As an alpha release, the primary goal is validating the 10-layer cognitive architecture, specifically the LangGraph state machine orchestration and memory stratification.
+
+## 2. Release Goals and Scope
+- Deploy a stable version of the 10 layers.
+- Validate hybrid search (BM25 + FAISS + BGE-2 reranking).
+- Gather metrics on Critic Agent (Layer 6) statistical validation.
+- Test the HitL (Human-in-the-Loop) mutation locks.
+
+## 3. Feature Completeness Matrix
+
+| Layer | Component | Status | Notes |
+|-------|-----------|--------|-------|
+| 0 | Ingress Router | Complete | FastAPI + WebSocket functioning |
+| 1 | Intent Decomposer | Complete | LLM decomposition working |
+| 2 | Personalization (DEP) | Partial | SAE filtering in development |
+| 3 | Context Engine | Complete | RRF 70/30 implemented |
+| 4 | Planner | Complete | Multi-step plans generated |
+| 5 | Orchestrator | Complete | LangGraph state machine active |
+| 6 | Critic Agent | Complete | Shannon entropy, perplexity calculated |
+| 7 | Execution Sandbox | Partial | E2B active, local fallback needs tuning |
+| 8 | Governance | Complete | SSRF, Code blocking active |
+| 9 | Memory | Partial | 5-layer stratification active, decay requires tuning |
+
+## 4. Known Limitations
+See `KNOWN_LIMITATIONS.md` for a comprehensive list. Key limitations include in-memory FAISS and lack of authentication.
+
+## 5. Test Coverage Status
+- **Backend Core**: 82% coverage
+- **LangGraph Nodes**: 75% coverage
+- **Memory Store**: 90% coverage
+- **E2B Sandbox**: 60% coverage (mocks used extensively)
+*Goal for Beta: 90% overall coverage.*
+
+## 6. Release Checklist
+- [ ] Ensure all tests pass (`pytest backend/testing`).
+- [ ] Verify `docker-compose.yml` builds cleanly.
+- [ ] Update `CHANGELOG.md` with v0.1.3 notes.
+- [ ] Tag the release in GitHub.
+- [ ] Trigger Render.com deployment.
+- [ ] Verify `/health/live` and `/health/ready` on production.
+- [ ] Run basic smoke tests via Next.js frontend.
+
+## 7. Rollback Procedures
+If critical issues are discovered post-deployment:
+1. Revert the GitHub release tag.
+2. In Render Dashboard, select the previous successful deployment and click "Rollback to this deploy".
+3. If database migrations were applied, run `alembic downgrade -1` manually via CLI before rolling back code.
+
+## 8. User Feedback Collection
+For the Alpha phase, feedback will be collected via:
+- GitHub Issues for bug tracking.
+- Dedicated Discord channel for qualitative feedback.
+- Telemetry data from the metrics endpoint.
+
+## 9. Metrics to Track
+- Intent Classification Accuracy (estimated via HitL corrections).
+- Context Engine Reranking Latency.
+- Critic Agent Rejection Rate (target < 15%).
+- Memory Decay accuracy over 72 hours.
+
+## 10. Path to Beta
+To transition from Alpha to Beta, the following must be achieved:
+- Persistent vector storage (e.g., pgvector or Milvus integration).
+- Horizontal scaling capabilities.
+- Full JWT authentication integration.
+- 90% test coverage.

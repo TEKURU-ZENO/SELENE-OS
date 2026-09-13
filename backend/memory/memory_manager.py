@@ -54,6 +54,15 @@ class MemoryManager:
         """Clear the active task state when completed or aborted."""
         working_store.clear(session_id)
 
+    def get_episodic_count(self) -> int:
+        """Get the total number of episodic memories."""
+        return len(episodic_store._memories)
+
+    def get_procedural_count(self) -> int:
+        """Get the total number of procedural memories."""
+        return len(procedural_store._memories)
+
 
 # Singleton
 memory_manager = MemoryManager()
+

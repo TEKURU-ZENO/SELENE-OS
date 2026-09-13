@@ -1,36 +1,72 @@
-# 🌙 SELENE OS — The 15-Minute Alpha Demo Narrative
+# Demo Narrative for SELENE OS
 
-This script is the definitive operational narrative for presenting SELENE OS to internal stakeholders and external governance auditors. It sequences the platform's core identity: **stable, deterministic, and replayable execution under stress.**
+## 1. Introduction
 
----
+This narrative guides a presenter through a standard demonstration of SELENE OS. The objective is to highlight all 10 architectural layers working in harmony, emphasizing speed, cognitive validation, safety, and memory retrieval.
 
-## 🎬 0:00 — Pre-Flight Initialization
-*   **Action**: Click the **"Reset Demo State"** (`RefreshCw` icon) button on the Trust Dashboard.
-*   **Narrative**: "Live demos of autonomous systems often fail due to stale state. SELENE solves this at the architecture level. I've just wiped the deterministic seed data, cleared all prior traces, and restored the event stream to a clean slate. SELENE is now ready."
+**Demo Scenario**: A researcher user interacts with SELENE to analyze a complex local repository, search the web for missing documentation, write an analysis script, and execute it securely.
 
-## 🚀 2:00 — The Golden Trace (Nominal Execution)
-*   **Action**: Select the `Golden Trace (Nominal)` scenario and click **"Start Trace"**.
-*   **Narrative**: "Watch the Cognitive Flight Recorder. Most AI platforms show you a chaotic stream of tokens. SELENE reconstructs the cognitive trace. We see the Planner routing a requirement to the GitHub MCP. But look closely at the inline reasoning: the system explicitly states *why* it made that choice (trust score: 0.91) and calculates its own confidence bands."
+## 2. Demo Environment Setup
 
-## ✋ 5:00 — HITL Continuity (Agency)
-*   **Action**: Pause at the `HITL Triggered` node in the timeline.
-*   **Narrative**: "The GitHub MCP requires drafting release notes. SELENE hits the Policy Gate. Because this is an external write action, the system halts. It refuses to proceed. The human modifies the action, and the trace continues seamlessly. SELENE does not lose its mind when interrupted; it preserves the DAG and executes the updated intent."
+- Ensure `docker-compose up` is running (FastAPI backend, Redis, Postgres).
+- Start the Next.js frontend.
+- Have a local directory `c:\Users\Dev Mehta\Desktop\SELENE` loaded as the workspace.
+- Have a valid E2B API key configured for Layer 7 sandboxing.
 
-## 🧠 8:00 — Reflection Discipline (Learning)
-*   **Action**: Highlight the final node (`Reflection Generated`).
-*   **Narrative**: "At the end of the trace, SELENE reflects on the execution. It proposes a procedural update. We track this because undisciplined learning corrupts systems. SELENE's reflection is audited before it enters memory."
+## 3. Step-by-Step Walkthrough
 
-## 💥 10:00 — The Governance Lockdown (Security)
-*   **Action**: Switch the dropdown to `Replay Tampering (Adversarial)` and click **"Start Trace"**.
-*   **Narrative**: "Now we stress the system. What happens if the execution receipt is intercepted and modified by an attacker before it enters reflection? Watch."
-*   *(The stream halts. The VERIFIED REPLAY badge turns into a pulsing red ⚠ PROVENANCE COMPROMISED.)*
-*   **Narrative**: "The trace locks. SELENE detects the divergence between the cryptographic provenance hash and the payload. The system fails deliberately, rather than polluting its memory with tampered data. This is forensic-grade security."
+### Phase 1: Ingress & Intent Classification (Layers 0, 1)
 
-## 📈 13:00 — Auditability and Export (.selene)
-*   **Action**: Point to the new **Operational Reliability** panel, then click the **"Export Bundle"** button.
-*   **Narrative**: "Governance isn't a feeling; it's an engineering standard. SELENE maintains strict Service Level Objectives (SLOs), like 0 tolerated cross-context leaks. And if an auditor wants proof, we click Export. We instantly receive a cryptographically signed `.selene` replay bundle—a cognitive crash dump that we can share across the enterprise. We aren't just running AI; we are running explainable cognitive infrastructure."
+**User Input**: "Find the hybrid search RRF logic in our codebase, then write a script to benchmark its FAISS vs BM25 performance based on standard IR metrics found online."
 
----
+**What to show**:
+The frontend UI lighting up. The terminal logs showing the request hitting Layer 0 (FastAPI Ingress router).
+**Talking Points**:
+- "Notice how fast the request is received by Layer 0."
+- "Layer 1 (Intent Decomposer) breaks this complex prompt into two distinct intents: code search, and external research + execution."
 
-## 🏁 15:00 — Conclusion
-*   **Narrative**: "That is SELENE OS. Governed cognition. Explainable interoperability. Deterministic replay. Thank you."
+### Phase 2: Personalization & Context Engine (Layers 2, 3)
+
+**What to show**:
+Terminal logs outputting the Dynamic Embedding Profile (DEP) similarity score and the context retrieval results.
+**Talking Points**:
+- "Layer 2 checks my personal DEP. It sees I prefer technical, pythonic outputs (cosine-delta adaptation)."
+- "Layer 3 (Context Engine) uses Reciprocal Rank Fusion (70% dense FAISS, 30% sparse BM25) reranked by BGE-2 to find `backend/memory/vector_store.py`."
+
+### Phase 3: Planning & Criticism (Layers 4, 5, 6)
+
+**What to show**:
+A LangGraph visualizer (or debug UI) showing node transitions from `planner` to `critic`.
+**Talking Points**:
+- "Layer 4 generates a multi-step plan."
+- "Before we execute, Layer 6 (Critic) statistically validates the plan. The Shannon Entropy $H(p)$ here is low (confident), and JS divergence indicates the plan perfectly matches the intent distribution. If it hallucinated, it would have been caught here."
+
+### Phase 4: Execution & Governance (Layers 7, 8)
+
+**What to show**:
+The system prompting the user for approval to install benchmark dependencies.
+**Talking Points**:
+- "Layer 7 wants to run a benchmark script, but installing external PIP packages triggers a Layer 8 Governance HITL (Human-in-the-Loop) lock."
+- "Observe the SSRF and shell protections active here."
+*Presenter clicks 'Approve'*
+- "The code now executes securely inside an E2B microVM, completely isolated from our local host."
+
+### Phase 5: Memory Stratification (Layers 9)
+
+**What to show**:
+The final output presented to the user, and a background task saving to memory.
+**Talking Points**:
+- "The benchmark results are summarized."
+- "Finally, Layer 9 stores this result in Working Memory. Over time, exponential decay ($S_{t} = S_0 \times \exp(-0.01 \cdot \Delta t)$) will transition important facts to Archival Memory, keeping the context window pristine."
+
+## 4. Expected Outputs
+
+- **Screenshots to Highlight**:
+  - The clean Next.js chat interface.
+  - The Layer 8 HITL Modal displaying risk levels and code diffs.
+  - The LangGraph debug console showing the 10-layer trace.
+  - A successful completion message with Mermaid visualization of the benchmark results.
+
+## 5. Conclusion
+
+This flow comprehensively demonstrates SELENE OS not merely as an LLM wrapper, but as a verifiable, cognitively constrained, and robust autonomous system.

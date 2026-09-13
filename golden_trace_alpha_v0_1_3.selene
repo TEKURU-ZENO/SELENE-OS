@@ -1,0 +1,68 @@
+{
+  "replay_schema_version": "1.0.0",
+  "runtime_version": "selene-alpha-0.1.3",
+  "trace_classification": "nominal",
+  "provenance_hash": "825b1295a4f7e2a9c3d4f5e6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b",
+  "governance_snapshot": {
+    "active_policies": [
+      "hitl_required",
+      "cross_domain_blocked"
+    ],
+    "trust_level": "RESTRICTED"
+  },
+  "redaction_summary": {
+    "pii_stripped": true,
+    "credentials_scrubbed": true
+  },
+  "replay_manifest": [
+    {
+      "step": "Plan Created",
+      "outcome": "APPROVED",
+      "reason": "Objective: Draft Release Notes. Required capability: PLUGIN_CAPABILITY.",
+      "confidence": "HIGH (98%)",
+      "governance_impact": "None"
+    },
+    {
+      "step": "Capability Routed",
+      "outcome": "APPROVED",
+      "reason": "GitHub MCP selected based on trust score (0.91) and replay support.",
+      "confidence": "HIGH (91%)",
+      "governance_impact": "None"
+    },
+    {
+      "step": "Policy Gate Evaluated",
+      "outcome": "APPROVED",
+      "reason": "release_workflow context permitted. HITL required for drafting.",
+      "confidence": "HIGH (100%)",
+      "governance_impact": "HITL Required"
+    },
+    {
+      "step": "HITL Triggered",
+      "outcome": "PAUSED",
+      "reason": "External drafting action requires human approval.",
+      "confidence": "N/A",
+      "governance_impact": "Workflow Interrupted"
+    },
+    {
+      "step": "User Modified Action",
+      "outcome": "MODIFIED",
+      "reason": "User appended architectural notes to the release draft.",
+      "confidence": "N/A",
+      "governance_impact": "Human Override"
+    },
+    {
+      "step": "Execution Resumed",
+      "outcome": "SUCCESS",
+      "reason": "GitHub MCP executed draft. Receipt hash verified: 825b1295a4f7",
+      "confidence": "HIGH (99%)",
+      "governance_impact": "Provenance Intact"
+    },
+    {
+      "step": "Reflection Generated",
+      "outcome": "ACCEPTED",
+      "reason": "Procedural Update: Trust firewall prevents context leakage deterministically.",
+      "confidence": "HIGH (95%)",
+      "governance_impact": "Learning Confirmed"
+    }
+  ]
+}

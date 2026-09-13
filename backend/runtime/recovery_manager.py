@@ -24,6 +24,10 @@ class RecoveryManager:
             self._sweep_dead_leases()
             await asyncio.sleep(30) # Run sweep every 30s
             
+    def recover_dead_leases(self):
+        """Scans for and sweeps all dead worker leases."""
+        self._sweep_dead_leases()
+
     def _sweep_dead_leases(self):
         dead_jobs = task_queue.get_dead_leases()
         

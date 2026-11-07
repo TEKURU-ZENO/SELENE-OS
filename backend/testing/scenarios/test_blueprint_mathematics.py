@@ -2,13 +2,15 @@
 SELENE OS — Blueprint Mathematics and Integration Tests
 Verifies:
 1. RRF 70/30 dense-sparse hybrid search and BM25 indexing.
-2. Normalized Shannon entropy, perplexity, and JS divergence calculations in the Critic Engine.
+2. Critic static and cognitive validation (deterministic DAG checks, capability bounds, risk scoring).
 3. Personalization embeddings (DEP) and sparse autoencoder filtration in the Mode Engine.
 4. Stratified memory layer mapping and exponential temporal decay.
 5. Sandbox microVM execution and local fallback isolation.
 """
 
 import os
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 import math
 import asyncio
 import numpy as np
@@ -89,10 +91,10 @@ def test_rrf_and_bm25():
     logger.info("PASS: BM25 indexing matches keywords and RRF 70/30 scores combine ranks correctly")
 
 
-async def test_critic_statistical_properties():
-    logger.info("TEST 2: Critic Shannon Entropy, Perplexity & JS Divergence")
+async def test_critic_validation_checks():
+    logger.info("TEST 2: Critic Validation and DAG Safety Checks (No Lexical Variance / Entropy Heuristics)")
 
-    # Define a dummy plan
+    # Define a valid dummy plan
     nodes = [
         PlanNode(
             id="node_1",
@@ -106,28 +108,45 @@ async def test_critic_statistical_properties():
         )
     ]
     group = ObjectiveGroup(id="group_1", objective="Simple objective", nodes=nodes)
-    plan = ExecutionPlan(
+    valid_plan = ExecutionPlan(
         plan_id="test_plan_math_123",
         objective="Simple objective",
         groups=[group],
         confidence=0.9
     )
 
-    # Compute statistical checks
-    entropy, perplexity, js_div = await critic_engine._run_statistical_checks(plan)
+    # 1. Verify valid plan passes static checks and cognitive critic
+    verdict = await critic_engine.evaluate_plan(valid_plan)
+    assert verdict.static_checks_passed is True
+    assert verdict.cognitive_checks_passed is True
+    assert verdict.approved is True
+    # Confirm lexical variance entropy / JSD fields are dropped
+    assert verdict.shannon_entropy is None
+    assert verdict.js_divergence is None
 
-    # Assert mathematical bounds
-    assert 0.0 <= entropy <= 1.0, f"Shannon entropy {entropy} out of bounds"
-    assert perplexity >= 1.0, f"Perplexity {perplexity} must be >= 1"
-    assert 0.0 <= js_div <= 1.0, f"JS Divergence {js_div} out of bounds"
+    # 2. Verify broken dependency is intercepted deterministically
+    broken_node = PlanNode(
+        id="node_2",
+        capability=Capability.EXECUTE_CODE,
+        objective="Execute with missing dep",
+        dependencies=["non_existent_node"],
+        success_criteria=[],
+        params={},
+        status=TaskState.PENDING,
+        risk_level=RiskLevel.HIGH
+    )
+    broken_plan = ExecutionPlan(
+        plan_id="test_plan_broken",
+        objective="Broken plan",
+        groups=[ObjectiveGroup(id="g2", objective="Broken", nodes=[broken_node])],
+        confidence=0.5
+    )
+    broken_verdict = await critic_engine.evaluate_plan(broken_plan)
+    assert broken_verdict.static_checks_passed is False
+    assert broken_verdict.approved is False
+    assert any("Invalid dependency" in issue.message for issue in broken_verdict.issues)
 
-    # Verify a high-instability check triggers issues
-    verdict = await critic_engine.evaluate_plan(plan)
-    assert verdict.shannon_entropy is not None
-    assert verdict.js_divergence is not None
-    assert verdict.perplexity is not None
-
-    logger.info("PASS: Critic statistical calculations return correct bounds and log stability profiles")
+    logger.info("PASS: Critic enforces deterministic DAG and capability invariants without pseudo-statistical lexical heuristics")
 
 
 def test_personalization_autoencoder():
@@ -251,7 +270,7 @@ async def run_all_tests():
     logger.info("=========================================")
     
     test_rrf_and_bm25()
-    await test_critic_statistical_properties()
+    await test_critic_validation_checks()
     test_personalization_autoencoder()
     await test_stratification_and_decay()
     await test_sandbox_microvm()

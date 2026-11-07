@@ -69,9 +69,9 @@ Developers can partially disable the mock for specific nodes. For example, to te
 
 The primary use case for replays is regression testing. Continuous Integration (CI) runs hundreds of `.selene` golden traces against the latest code.
 
-The Critic agent (Layer 6) calculates statistical validations during these replays:
-- **Shannon Entropy / Perplexity**: Ensures the new LLM output isn't statistically degrading compared to the golden trace.
-- **JS Divergence**: $D_{JS} = \frac{1}{2} D_{KL}(P||M) + \frac{1}{2} D_{KL}(Q||M)$ is used to measure the difference between the distribution of actions in the golden trace vs the new execution. If $D_{JS}$ exceeds a threshold, the CI build fails, flagging a significant behavior shift.
+The Critic agent (Layer 6) validates these replays:
+- **DAG & Invariant Validation**: Ensures the replayed execution matches the structural dependency graph and capability bounds of the golden trace.
+- **Trace Divergence Verification**: Compares the sequence and outputs of executed actions against the golden trace. Any unexpected deviation or missing dependency in CI flags a behavior shift.
 
 ## 7. Practical Usage
 

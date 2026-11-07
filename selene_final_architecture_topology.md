@@ -144,7 +144,7 @@ The core intelligence. This is where SELENE *thinks*:
 |-----------|---------------|----------|
 | **LangGraph Orchestrator** | 10-node state machine with conditional routing, checkpointing, and repair loops | `backend/core/graph_routing.py` |
 | **Executive Planner** | LLM-based multi-step plan generation with capability-tool matching | `backend/core/planner.py` |
-| **Hybrid Critic** | 4-dimensional validation (Logical, Safety, Capability, Resource) + statistical checks (Shannon entropy, perplexity, JS divergence) | `backend/core/critic.py` |
+| **Hybrid Critic** | 4-dimensional validation (Logical, Safety, Capability, Resource) with deterministic DAG & cognitive criterion verification | `backend/core/critic.py` |
 | **Reflection Engine** | 3-tier reflection (operational → tactical → strategic) with learning policy evaluation | `backend/core/graph_nodes.py` |
 | **Intent Engine** | LLM-based intent classification with multi-intent splitting | `backend/core/intent_engine.py` |
 | **Mode Engine** | DEP personalization with Sparse Autoencoder filtering | `backend/core/mode_engine.py` |
@@ -287,7 +287,7 @@ sequenceDiagram
 | 3 | Context Engine | Implemented | RRF 70/30 + BM25 + FAISS + BGE-2 |
 | 4 | Planner | Implemented | Multi-step plan generation |
 | 5 | LangGraph Orchestrator | Implemented | 10-node state machine |
-| 6 | Critic Agent | Implemented | Shannon entropy + perplexity + JS divergence |
+| 6 | Critic Agent | Implemented | Deterministic DAG checks + Cognitive verification |
 | 7 | Execution Sandbox | Implemented | E2B microVM + local fallback |
 | 8 | Governance | Implemented | HITL, SSRF, shell blocking |
 | 9 | Memory | Implemented | 5-layer stratification + decay |

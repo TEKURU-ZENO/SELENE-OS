@@ -100,6 +100,19 @@ class BrowserAgent:
                 return False
                 
             try:
+                ip = ipaddress.ip_address(host)
+                if (ip.is_loopback or 
+                    ip.is_private or 
+                    ip.is_link_local or 
+                    ip.is_reserved or 
+                    ip.is_multicast or 
+                    ip.is_unspecified):
+                    return False
+                return True
+            except ValueError:
+                pass
+
+            try:
                 addr_info = socket.getaddrinfo(host, None)
                 for family, _, _, _, sockaddr in addr_info:
                     ip_str = sockaddr[0]
@@ -112,7 +125,13 @@ class BrowserAgent:
                         ip.is_unspecified):
                         return False
             except socket.gaierror:
-                return False
+                if (not "." in host_lower or 
+                    host_lower.endswith(".local") or 
+                    host_lower.endswith(".internal") or 
+                    host_lower.endswith(".lan") or
+                    host_lower.endswith(".localhost")):
+                    return False
+                return True
                 
             return True
         except Exception:

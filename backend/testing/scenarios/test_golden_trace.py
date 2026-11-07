@@ -4,6 +4,11 @@ Executes the Developer Release Workflow via GitHub MCP and immediately attacks i
 to validate Replay, HITL, Fallback, and Governance resilience.
 """
 
+import os
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+
+
 from typing import Dict, Any
 from mcp.adapters.capability_adapter import capability_adapter
 from mcp.sandbox.policy_gate import policy_gate

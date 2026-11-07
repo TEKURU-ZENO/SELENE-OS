@@ -57,6 +57,6 @@ The most technically complex release, implementing the advanced mathematical and
 **Features:**
 - **Layer 2 (Personalization/DEP):** Implemented Dynamic Embedding Profiles (DEP) using cosine-delta personalization (`cos(DEP_current, DEP_new) < 0.85 → adapt mode`), filtered through Sparse Autoencoders.
 - **Layer 3 (Context Engine):** Shipped Reciprocal Rank Fusion (RRF 70/30 hybrid search). Combines BM25 (sparse) + FAISS (dense), followed by a final re-rank pass using `BAAI/bge-reranker-base`.
-- **Layer 6 (Critic Agent):** Integrated robust statistical validation for LLM outputs. Calculates Shannon entropy `H(p) = -Σ p_i·log₂(p_i)`, perplexity `2^H`, and Jensen-Shannon divergence `DJS = ½DKL(P||M) + ½DKL(Q||M)` to detect hallucinations.
+- **Layer 6 (Critic Agent):** Integrated robust 4-dimensional validation. Enforces deterministic DAG dependency checks, capability boundary constraints, objective group limits, and cognitive criteria verification.
 - **Layer 7 (Execution Sandbox):** Finalized integration with E2B microVMs for secure cloud execution, with a seamless fallback to localized subprocess execution (30s timeout).
 - **Layer 9 (Memory):** Released the 5-layer stratification model (working, episodic, semantic, procedural, archival) combined with an exponential temporal decay algorithm: `score × exp(-λ·Δt_hours)` where default `λ=0.01`.

@@ -4,7 +4,7 @@
 
 The Replay Forensics system is a core component of SELENE's operational transparency. It enables post-hoc analysis of cognitive decisions by capturing the exact LangGraph state at every node transition across the 10 Architectural Layers.
 
-The primary purpose is to trace *why* SELENE took a specific action, validate Layer 6 Critic statistics (Entropy, JS Divergence), and provide regression detection via Golden Traces.
+The primary purpose is to trace *why* SELENE took a specific action, validate Layer 6 Critic decisions (DAG dependency integrity, capability bounds, verifiable criteria), and provide regression detection via Golden Traces.
 
 ## 2. Trace Format and Structure
 
@@ -21,9 +21,9 @@ Each trace payload consists of:
     "intent": "Decomposed intent data...",
     "plan": ["Step 1", "Step 2"],
     "critic_scores": {
-      "entropy": 0.45,
-      "perplexity": 1.36,
-      "js_divergence": 0.12
+      "static_checks_passed": true,
+      "cognitive_checks_passed": true,
+      "critic_confidence": 0.95
     }
   },
   "llm_calls": [
@@ -55,11 +55,9 @@ python -m selene.cli replay --trace-id f47ac10b-58cc-4372-a567-0e02b2c3d479
 
 During a replay, external side-effects (Layer 7 sandbox execution) are mocked using the recorded outputs from the original trace, ensuring idempotency.
 
-### 4.1 Statistical Analysis of Traces
+### 4.1 Invariant and DAG Analysis of Traces
 
-Using Layer 6 mathematical guarantees, forensics can identify hallucinations. If a plan failed, operators can check the JS divergence between the intended action ($P$) and the executed action ($Q$) distribution:
-$$ D_{JS}(P || Q) = \frac{1}{2} D_{KL}(P || M) + \frac{1}{2} D_{KL}(Q || M) $$
-where $M = \frac{1}{2}(P+Q)$. A divergence $> 0.2$ usually indicates the agent diverged from the user's intent.
+Using Layer 6 deterministic and cognitive checks, forensics can identify plan divergence. If a plan failed, operators can inspect the DAG dependency validation issues and cognitive criteria evaluations recorded during execution to pinpoint faulty assumptions or broken prerequisites.
 
 ## 5. Golden Trace Validation
 
@@ -82,7 +80,7 @@ test_forensics:
   stage: test
   script:
     - pytest backend/testing/test_forensics.py --run-golden-comparisons
-    - python -m scripts.validate_entropy_bounds
+    - pytest backend/testing/scenarios/test_blueprint_mathematics.py
 ```
 
 ## 7. Code References

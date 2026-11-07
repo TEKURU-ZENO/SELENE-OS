@@ -6,7 +6,6 @@ DOES NOT specify tools directly.
 
 import uuid
 from typing import Dict, Any, List
-from langchain_core.prompts import ChatPromptTemplate
 from schemas import ExecutionPlan, ContextBundle, Capability
 from services.llm_service import llm_service
 import structlog
@@ -20,15 +19,7 @@ DEFAULT_CONSTRAINTS = {
     "environment": "development"
 }
 
-class Planner:
-    """
-    The Executive Planner.
-    Reasons in abstract capabilities, objective groups, and success criteria.
-    """
-
-    def __init__(self):
-        self._prompt = ChatPromptTemplate.from_messages([
-            ("system", """You are the Executive Planner for SELENE OS.
+PLANNER_SYSTEM_PROMPT = """You are the Executive Planner for SELENE OS.
 Your objective is to decompose the user's intent into a structured ExecutionPlan.
 
 CRITICAL RULES:
@@ -48,9 +39,16 @@ Procedural: {procedural}
 
 Repair Context (if this is a revision):
 {repair_context}
-"""),
-            ("user", "Intent to plan: {user_query}")
-        ])
+"""
+
+class Planner:
+    """
+    The Executive Planner.
+    Reasons in abstract capabilities, objective groups, and success criteria.
+    """
+
+    def __init__(self):
+        pass
 
     async def generate_plan(
         self, 
@@ -67,25 +65,19 @@ Repair Context (if this is a revision):
         active_constraints = constraints or DEFAULT_CONSTRAINTS
         repair_ctx = repair_context or "None (Initial Draft)"
 
-        # Prepare prompt input
-        prompt_input = {
-            "user_query": user_query,
-            "constraints": active_constraints,
-            "episodic": context_bundle.episodic,
-            "semantic": context_bundle.semantic,
-            "procedural": context_bundle.procedural,
-            "repair_context": repair_ctx
-        }
+        system_content = PLANNER_SYSTEM_PROMPT.format(
+            constraints=active_constraints,
+            episodic=context_bundle.episodic,
+            semantic=context_bundle.semantic,
+            procedural=context_bundle.procedural,
+            repair_context=repair_ctx
+        )
 
-        # Format prompt
-        messages = self._prompt.format_messages(**prompt_input)
-        
-        # Convert to dictionary format expected by llm_service
-        history = [{"role": msg.type, "content": msg.content} for msg in messages]
+        history = [
+            {"role": "system", "content": system_content},
+            {"role": "user", "content": f"Intent to plan: {user_query}"}
+        ]
 
-        # In a real Langchain integration we would use `.with_structured_output(ExecutionPlan)`
-        # Here we instruct the LLM Service to use structured output
-        
         # For MVP we simulate the LLM outputting the structured schema
         plan_dict = await llm_service.generate_structured(
             history=history,

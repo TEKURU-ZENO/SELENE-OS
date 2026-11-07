@@ -60,10 +60,10 @@ The central brain that coordinates the execution of the plan.
 - **Purpose**: Manages the lifecycle of a request, transitioning between planning, execution, and review.
 
 ### Layer 6 - Critic Agent
-Statistically validates the proposed plan and execution results.
-- **Implementation**: Shannon entropy, perplexity, and JS divergence scoring.
-- **Features**: Rejects plans with high perplexity (uncertainty) or entropy.
-- **Purpose**: Acts as an internal quality control mechanism, ensuring high-confidence outputs.
+Rigorously validates the proposed plan and execution results.
+- **Implementation**: Deterministic DAG validation (dependency integrity, capability validity, node counts) and LLM cognitive verification (verifiable criteria, semantic grounding).
+- **Features**: Deterministically intercepts broken dependency chains and capability mismatches before code runs.
+- **Purpose**: Acts as an internal quality control mechanism, ensuring verifiable, logically sound plans without pseudo-statistical lexical variance heuristics.
 
 ### Layer 7 - Execution Sandbox
 Safely runs code, commands, and tools.

@@ -67,15 +67,15 @@ This document tracks the crucial architectural decisions made during the design 
 
 ---
 
-## ADR-006: Shannon Entropy for Critic Validation
+## ADR-006: Deterministic DAG & Cognitive Verification for Critic Validation
 
-**Status:** Accepted
-**Context:** The system needed an automated, mathematical way to detect if the LLM was hallucinating or highly uncertain before executing risky plans.
-**Decision:** We implemented Layer 6 (Critic Agent) using information-theoretic metrics. It evaluates Shannon entropy `H(p) = -Σ p_i·log₂(p_i)`, perplexity, and Jensen-Shannon divergence to score output distributions.
+**Status:** Accepted (Updated from deprecated lexical variance heuristics)
+**Context:** The system needed an automated, robust way to detect if a plan was flawed, missing dependencies, or ungrounded before executing risky operations. Measuring token lexical variance across temperatures was dropped as it reflects temperature diversity rather than plan soundness or hallucination.
+**Decision:** We implemented Layer 6 (Critic Agent) using deterministic DAG graph validation (dependency resolution, capability bounds, objective size constraints) combined with LLM cognitive verification of verifiable success criteria and semantic sequence logic.
 **Consequences:**
-- Provides a statistically sound threshold for validation rather than relying purely on a second "LLM judge" prompt.
-- If entropy is too high, the system automatically loops back to Layer 4 (Planner) for a safer approach or invokes Layer 8 (HITL).
-- Requires access to logprobs from the LLM provider, limiting full functionality to providers that expose token probabilities (e.g., OpenAI, local vLLM).
+- Provides 100% deterministic interception of broken DAG dependencies and capability mismatches before code runs.
+- Removes unreliable token entropy heuristics that falsely flagged valid high-diversity completions.
+- Cleanly triggers the repair loop back to Layer 4 (Planner) or escalates to Layer 8 (HITL) with actionable diagnostics.
 
 ---
 

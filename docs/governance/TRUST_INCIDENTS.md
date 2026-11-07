@@ -57,7 +57,7 @@ If a mutation is attempted on a locked resource, the `hitl.py` interceptor throw
 Operators use Replay Forensics to investigate:
 - Did Layer 1 (Intent) misclassify the user prompt?
 - Did Layer 4 (Planner) hallucinate the tool?
-- Was Layer 6 (Critic) entropy high?
+- Did Layer 6 (Critic) flag dependency or cognitive criteria issues?
 
 ## 7. Example Incidents and Resolutions
 

@@ -47,7 +47,7 @@ The primary entry point for stateless interactions.
   "result": "Found 45 error lines. Primary cause: connection timeout...",
   "critic_verdict": {
     "approved": true,
-    "entropy": 1.24
+    "critic_confidence": 0.95
   }
 }
 ```
@@ -127,13 +127,16 @@ class SeleneState(TypedDict):
 ```
 
 ### CriticVerdict
-Used by Layer 6 (Critic Agent) to validate statistical divergence and Shannon entropy.
+Used by Layer 6 (Critic Agent) to return structural and cognitive validation results.
 ```python
 class CriticVerdict(BaseModel):
-    is_valid: bool
-    shannon_entropy_hp: float
-    js_divergence: float
-    feedback: str
+    approved: bool
+    static_checks_passed: bool
+    cognitive_checks_passed: bool
+    risk_score: float
+    critic_confidence: float
+    issues: List[CriticIssue]
+    suggested_repairs: List[str]
 ```
 
 ### MemoryMetadata

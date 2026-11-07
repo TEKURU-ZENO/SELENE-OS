@@ -87,7 +87,7 @@ class BGEReranker:
             return []
         
         # Try loading SentenceTransformers CrossEncoder if not already failed
-        if not self._failed and self._model is None:
+        if os.environ.get("SELENE_ENABLE_BGE_RERANKER") == "1" and not self._failed and self._model is None:
             try:
                 from sentence_transformers import CrossEncoder
                 import torch
@@ -95,7 +95,11 @@ class BGEReranker:
                 device = "cpu"
                 if torch.cuda.is_available():
                     device = "cuda"
-                self._model = CrossEncoder(self.model_name, device=device)
+                try:
+                    self._model = CrossEncoder(self.model_name, device=device, local_files_only=True)
+                except Exception:
+                    self._failed = True
+                    logger.info('bge_reranker_offline_local_unavailable_using_fallback')
                 logger.info("bge_reranker_loaded", model=self.model_name, device=device)
             except Exception as e:
                 logger.warning("bge_reranker_load_failed_using_fallback", error=str(e))

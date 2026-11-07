@@ -20,7 +20,7 @@
 
 **SELENE OS** (Self-Evolving Logic & Execution Network Environment) is an advanced, multi-agent cognitive operating system designed to handle complex, multi-step tasks dynamically. Rather than operating as a simple chatbot or a rigid automation script, SELENE OS functions as a comprehensive ecosystem where multiple specialized AI agents collaborate, plan, execute, and learn.
 
-At its core, SELENE OS bridges the gap between natural language intent and safe, isolated execution. It understands user goals, retrieves deep context from a 5-layer stratified memory system, plans multi-step actions, and rigorously validates outputs using statistical metrics like Shannon entropy and JS divergence before presenting them to the user or taking action in its sandboxed environment.
+At its core, SELENE OS bridges the gap between natural language intent and safe, isolated execution. It understands user goals, retrieves deep context from a 5-layer stratified memory system, plans multi-step actions, and rigorously validates outputs using deterministic DAG dependency checks and cognitive verification before presenting them to the user or taking action in its sandboxed environment.
 
 Built with a robust 10-layer architecture, SELENE guarantees high reliability, dynamic personalization through Dynamic Embedding Profiles (DEP), and strict governance via Human-In-The-Loop (HITL) locks and SSRF protections.
 
@@ -60,7 +60,7 @@ graph TD
 
 - **Multi-Agent Orchestration**: Powered by LangGraph, coordinating 10 specialized cognitive nodes to handle distinct phases of problem-solving.
 - **Advanced Context Engine**: Hybrid RRF (Reciprocal Rank Fusion) combining dense (FAISS) and sparse (BM25) search at a 70/30 ratio, enhanced by BGE-2 reranking for unparalleled retrieval accuracy.
-- **Statistical Validation**: A dedicated Critic Agent evaluates outputs using Shannon entropy ($H(p)$), perplexity ($2^H$), and Jensen-Shannon divergence to minimize hallucinations and enforce logical consistency.
+- **Deterministic & Cognitive Validation**: A dedicated Critic Agent evaluates plans using deterministic DAG dependency validation, capability boundary enforcement, and semantic criterion verification to ensure plan soundness.
 - **Dynamic Personalization**: Employs Dynamic Embedding Profiles (DEP) filtered through Sparse Autoencoders. Adapts dynamically if cosine delta `< 0.85`.
 - **Stratified Memory with Decay**: A 5-layer memory system (Working, Episodic, Semantic, Procedural, Archival) featuring exponential temporal decay ($score \times e^{-\lambda \Delta t}$).
 - **Secure Execution**: Dual-layer execution strategy using E2B cloud microVMs with seamless local subprocess fallback (30s timeout).
@@ -179,7 +179,7 @@ SELENE's robust capabilities are divided into ten distinct architectural layers:
 4. **Layer 3 - Context Engine**: Implements RRF (Reciprocal Rank Fusion) at a 70/30 split between FAISS dense search and BM25 sparse search, capped with BGE-2 reranking.
 5. **Layer 4 - Planner**: Generates multi-step, directed acyclic graphs for execution, matching required steps with available system capabilities.
 6. **Layer 5 - Orchestrator**: The LangGraph state machine bridging the API to cognitive processing. Manages state transitions across 10 distinct cognitive nodes.
-7. **Layer 6 - Critic Agent**: A rigorous validation layer utilizing Shannon entropy ($H(p)$), perplexity, and JS divergence to evaluate LLM outputs for certainty and coherence.
+7. **Layer 6 - Critic Agent**: A rigorous validation layer utilizing deterministic DAG dependency verification, capability constraints, and cognitive criteria checks to guarantee plan safety and logical soundness.
 8. **Layer 7 - Execution Sandbox**: Secure code execution via E2B microVMs, with a robust local subprocess fallback utilizing a strict 30-second timeout.
 9. **Layer 8 - Governance**: Enforces safety protocols, including Human-in-the-Loop (HITL) mutation locks, SSRF protection on network calls, and shell/command blocking.
 10. **Layer 9 - Memory**: A 5-layer stratified system (Working: $\le1$hr, Episodic: $\le24$hr, Semantic: $\le7$d, Procedural: $\le30$d, Archival: $>30$d) with exponential decay functions.

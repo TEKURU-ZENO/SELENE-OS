@@ -103,7 +103,7 @@ sequenceDiagram
     EXC-->>PLN: Exit Code 1: 404 Not Found
     
     PLN->>REF: Submit failure for analysis
-    REF->>REF: Calculate entropy, analyze stderr
+    REF->>REF: Analyze error trace and stderr
     REF-->>PLN: Suggested Fix: Check package name spelling
     
     PLN->>EXC: Run `npm search unknown-package`

@@ -64,7 +64,7 @@ User Query → Intent Classification → Context Retrieval → Plan Generation
     → Validation → Human-in-the-Loop (if required) → Reflection → Memory Update
 ```
 
-Each stage is a discrete LangGraph node with typed inputs and outputs. The Critic validates every plan using information-theoretic measures (Shannon entropy, perplexity, Jensen-Shannon divergence) before any execution occurs. High-variance or low-confidence plans are automatically flagged for revision or human review.
+Each stage is a discrete LangGraph node with typed inputs and outputs. The Critic validates every plan using deterministic DAG dependency checks, capability boundary constraints, and cognitive criteria evaluation before any execution occurs. Flawed or ambiguous plans are automatically flagged for repair or human review.
 
 ### 4. Governed Extensibility
 
@@ -103,7 +103,7 @@ SELENE's architecture is inspired by three foundational disciplines:
 
 1. **Cognitive Science** — The 5-layer memory stratification mirrors human cognitive memory (working memory, episodic memory, semantic memory, procedural memory, long-term archival). The temporal decay model reflects the psychological principle that memory accessibility decreases exponentially with time.
 
-2. **Information Theory** — The Critic Agent uses Shannon entropy to measure plan stability, perplexity to quantify predictability, and Jensen-Shannon divergence to detect inconsistency between independent plan evaluations. These aren't heuristics — they're mathematically grounded measures of information quality.
+2. **Formal Verification & Cognitive Critique** — The Critic Agent enforces strict DAG dependency consistency, abstract capability boundaries, and verifiable success criteria. Plans must pass both deterministic structural graph invariants and LLM-driven semantic evaluations before dispatch.
 
 3. **Operating Systems Design** — SELENE borrows from OS principles: process isolation (sandboxed execution), memory management (stratified stores with garbage collection via decay), scheduling (attention budgeting), and security (capability-based access control with trust levels).
 

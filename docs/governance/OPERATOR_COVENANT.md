@@ -29,10 +29,9 @@ SELENE promises the following technical guarantees to the operator:
 - **Mutation Locks**: High-risk system changes (e.g., recursive file deletions, root-level package installations) cannot proceed without operator cryptographic/session approval.
 
 ### 4.2 Cognitive Assurance (Layer 6: Critic Agent)
-Before critical execution steps, the Critic agent statistically validates the proposed plan.
-If the plan exhibits high Shannon Entropy or Perplexity:
-$$ H(p) = -\sum_{i} p_i \cdot \log_2(p_i) > \tau $$
-The system halts execution and escalates to the operator.
+Before critical execution steps, the Critic agent validates the proposed plan.
+If the plan violates DAG dependency constraints, capability boundaries, or cognitive verifiable criteria:
+The system halts execution and escalates to the repair loop or operator.
 
 ### 4.3 Execution Boundaries (Layer 7)
 All untrusted code executes inside the E2B microVM sandbox (`backend/governance/plugin_sandbox.py`), ensuring complete isolation from the host OS. Local subprocess fallbacks are strictly timed out (30s default) and sandboxed via cgroups.

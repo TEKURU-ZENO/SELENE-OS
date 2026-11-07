@@ -39,7 +39,7 @@ Terminal logs outputting the Dynamic Embedding Profile (DEP) similarity score an
 A LangGraph visualizer (or debug UI) showing node transitions from `planner` to `critic`.
 **Talking Points**:
 - "Layer 4 generates a multi-step plan."
-- "Before we execute, Layer 6 (Critic) statistically validates the plan. The Shannon Entropy $H(p)$ here is low (confident), and JS divergence indicates the plan perfectly matches the intent distribution. If it hallucinated, it would have been caught here."
+- "Before we execute, Layer 6 (Critic) validates the plan. It enforces deterministic DAG integrity and runs cognitive verification against verifiable success criteria to ensure plan soundness before dispatch."
 
 ### Phase 4: Execution & Governance (Layers 7, 8)
 

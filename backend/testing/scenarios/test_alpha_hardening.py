@@ -3,6 +3,11 @@ SELENE OS — Alpha Hardening & Health Integration Tests
 Verifies health check endpoints, SSRF blocking, external mutation locks, and shell/bash block.
 """
 
+import os
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+
+
 import asyncio
 from config.settings import settings
 from mcp.sandbox.policy_gate import policy_gate

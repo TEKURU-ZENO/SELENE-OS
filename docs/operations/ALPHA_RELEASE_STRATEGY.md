@@ -19,7 +19,7 @@ This document outlines the strategy for the Alpha v0.1.3 release of SELENE OS. A
 | 3 | Context Engine | Complete | RRF 70/30 implemented |
 | 4 | Planner | Complete | Multi-step plans generated |
 | 5 | Orchestrator | Complete | LangGraph state machine active |
-| 6 | Critic Agent | Complete | Shannon entropy, perplexity calculated |
+| 6 | Critic Agent | Complete | Deterministic DAG checks + cognitive verification |
 | 7 | Execution Sandbox | Partial | E2B active, local fallback needs tuning |
 | 8 | Governance | Complete | SSRF, Code blocking active |
 | 9 | Memory | Partial | 5-layer stratification active, decay requires tuning |

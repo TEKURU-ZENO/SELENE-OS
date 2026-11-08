@@ -70,7 +70,7 @@ This document tracks the crucial architectural decisions made during the design 
 ## ADR-006: Deterministic DAG & Cognitive Verification for Critic Validation
 
 **Status:** Accepted (Updated from deprecated lexical variance heuristics)
-**Context:** The system needed an automated, robust way to detect if a plan was flawed, missing dependencies, or ungrounded before executing risky operations. Measuring token lexical variance across temperatures was dropped as it reflects temperature diversity rather than plan soundness or hallucination.
+**Context:** The system needed an automated, robust way to detect if a plan was flawed, missing dependencies, or ungrounded before executing risky operations. Measuring token lexical variance across temperatures was dropped as it reflects temperature diversity rather than semantic plan soundness.
 **Decision:** We implemented Layer 6 (Critic Agent) using deterministic DAG graph validation (dependency resolution, capability bounds, objective size constraints) combined with LLM cognitive verification of verifiable success criteria and semantic sequence logic.
 **Consequences:**
 - Provides 100% deterministic interception of broken DAG dependencies and capability mismatches before code runs.

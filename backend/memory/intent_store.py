@@ -1,6 +1,6 @@
 """
 SELENE OS — Intent Store
-Separates temporary, active workflows from stable preferences to prevent hallucination.
+Separates temporary, active workflows from stable preferences to prevent context cross-contamination and semantic drift.
 """
 
 from typing import List, Dict

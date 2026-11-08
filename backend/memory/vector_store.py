@@ -21,6 +21,22 @@ def tokenize(text: str) -> List[str]:
     return re.findall(r'\w+', text.lower())
 
 
+def compute_rrf_score(
+    dense_rank: Optional[int],
+    sparse_rank: Optional[int],
+    k: float = 60.0,
+    dense_weight: float = 0.7,
+    sparse_weight: float = 0.3,
+) -> float:
+    """
+    Computes reciprocal rank fusion score (Cormack, Clarke, Buettcher, 2009):
+    RRF = dense_weight / (k + dense_rank) + sparse_weight / (k + sparse_rank)
+    """
+    dense_part = (dense_weight / (k + dense_rank)) if (dense_rank is not None and dense_rank > 0) else 0.0
+    sparse_part = (sparse_weight / (k + sparse_rank)) if (sparse_rank is not None and sparse_rank > 0) else 0.0
+    return dense_part + sparse_part
+
+
 class BM25Index:
     """Lightweight pure-Python BM25 keyword search index."""
 
@@ -69,7 +85,8 @@ class BM25Index:
                 denominator = term_tf + self.k1 * (1.0 - self.b + self.b * (doc_len / (self.avg_doc_len or 1.0)))
                 score += idf * (numerator / denominator)
                 
-            scores.append((idx, score))
+            if score > 0.0:
+                scores.append((idx, score))
         scores.sort(key=lambda x: x[1], reverse=True)
         return scores[:limit]
 
@@ -165,6 +182,13 @@ class VectorStore:
             logger.error("faiss_not_installed", hint="pip install faiss-cpu")
             raise
 
+    def clear(self) -> None:
+        """Resets the FAISS index, metadata, and BM25 index cleanly."""
+        self._ensure_initialized()
+        self._index = self._faiss.IndexFlatL2(self._dimension)
+        self._metadata = []
+        self._bm25 = BM25Index()
+
     async def add(self, text: str, metadata: dict) -> bool:
         """Embeds text and adds it to the FAISS dense index and BM25 sparse index."""
         self._ensure_initialized()
@@ -229,12 +253,18 @@ class VectorStore:
                 dense_rank = dense_ranks.get(idx)
                 sparse_rank = sparse_ranks.get(idx)
                 
-                # RRF calculation (standard constant k=60)
-                dense_rrf = 1.0 / (60.0 + dense_rank) if dense_rank else 0.0
-                sparse_rrf = 1.0 / (60.0 + sparse_rank) if sparse_rank else 0.0
+
+
+
                 
-                # 70/30 weighting
-                rrf_score = 0.7 * dense_rrf + 0.3 * sparse_rrf
+
+                rrf_score = compute_rrf_score(
+                    dense_rank=dense_rank,
+                    sparse_rank=sparse_rank,
+                    k=60.0,
+                    dense_weight=0.7,
+                    sparse_weight=0.3
+                )
                 
                 entry = dict(self._metadata[idx])
                 entry["_score"] = float(rrf_score)

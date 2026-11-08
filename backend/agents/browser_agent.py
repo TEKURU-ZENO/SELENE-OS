@@ -67,7 +67,7 @@ class BrowserAgent:
     async def _capture_dom_state(self, action_name: str) -> str:
         """
         Takes a screenshot and caches the DOM state.
-        Crucial for anti-hallucination and receipt artifacts.
+        Crucial for grounded verification and receipt artifacts.
         """
         await self._ensure_browser()
         

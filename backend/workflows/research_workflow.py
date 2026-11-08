@@ -70,7 +70,7 @@ def get_research_workflow() -> SharedCognitiveWorkflow:
         reflection_policies={
             "focus_areas": [
                 "Were the sources sufficiently diverse and authoritative?",
-                "Did the synthesis correctly represent source positions without hallucination?",
+                "Did the synthesis faithfully represent source positions without ungrounded claims or drift?",
                 "Were contradictions correctly identified and presented to the user?",
                 "Did the user add significant new sources not found by SELENE?"
             ],

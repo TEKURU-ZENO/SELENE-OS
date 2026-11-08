@@ -50,7 +50,8 @@ class EpisodicStore:
     
     def search(self, query: str, limit: int = 5) -> List[EpisodicMemory]:
         # Mock Dense/Sparse search
-        matches = [m for m in self._memories if query.lower() in m.content.lower()]
+        q_words = [w for w in query.lower().split() if len(w) > 2]
+        matches = [m for m in self._memories if query.lower() in m.content.lower() or any(w in m.content.lower() for w in q_words)]
         return sorted(matches, key=lambda x: x.metadata.importance, reverse=True)[:limit]
 
 
@@ -67,7 +68,7 @@ class SemanticStore:
     def add_or_update(self, content: str, confidence: float = 1.0, importance: float = 0.8, tags: List[str] = None) -> SemanticMemory:
         """
         Add a new fact or update the confidence/access time of an existing one.
-        Prevents hallucinated facts from becoming permanent without deduplication.
+        Prevents ungrounded facts from becoming permanent without deduplication.
         """
         fact_hash = self._hash_fact(content)
         
@@ -101,7 +102,8 @@ class SemanticStore:
 
     def search(self, query: str, limit: int = 5) -> List[SemanticMemory]:
         # Mock search
-        matches = [m for m in self._memories.values() if query.lower() in m.content.lower()]
+        q_words = [w for w in query.lower().split() if len(w) > 2]
+        matches = [m for m in self._memories.values() if query.lower() in m.content.lower() or any(w in m.content.lower() for w in q_words)]
         return sorted(matches, key=lambda x: x.metadata.confidence * x.metadata.importance, reverse=True)[:limit]
 
 

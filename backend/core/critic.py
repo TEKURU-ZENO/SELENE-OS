@@ -12,13 +12,13 @@ import structlog
 
 logger = structlog.get_logger(__name__)
 
-CRITIC_SYSTEM_PROMPT = """You are the Cognitive Critic for SELENE OS.
-Review the proposed ExecutionPlan for dangerous assumptions, poor sequencing, ambiguous objectives, and hallucination risks.
+CRITIC_SYSTEM_PROMPT = """You are the Plan Verification Critic for SELENE OS.
+Review the proposed ExecutionPlan for ungrounded assumptions, missing dependencies, ambiguous objectives, and unreachable success criteria.
 
 Focus specifically on:
-1. Are the Success Criteria truly verifiable?
-2. Are the dependencies logically sound?
-3. Is there a high risk of failure based on the abstract capabilities chosen?
+1. Are the Success Criteria concrete, measurable, and verifiable?
+2. Are the node dependencies logically ordered without cycles or missing prerequisites?
+3. Are the required capabilities within allowed execution boundaries and resource limits?
 
 Output a strict JSON evaluating the plan. If approved, provide issues=[] and approved=true. 
 If rejected, provide specific issues and suggested_repairs. Provide a critic_confidence score (0.0-1.0).
@@ -40,7 +40,7 @@ class CriticEngine:
         # 1. Static Critic (Deterministic checks)
         static_passed, static_issues = self._run_static_checks(plan)
 
-        # 2. Cognitive Critic (LLM checks: verifies criteria, logical dependencies, hallucination risks)
+        # 2. Cognitive Critic (LLM checks: verifies verifiable criteria, capability bounds, and dependency ordering)
         cognitive_passed, cog_verdict_partial = await self._run_cognitive_checks(plan)
 
         # 3. Combine Verdicts
@@ -64,9 +64,6 @@ class CriticEngine:
             critic_confidence=cog_verdict_partial.critic_confidence,
             static_checks_passed=static_passed,
             cognitive_checks_passed=cognitive_passed,
-            shannon_entropy=None,
-            perplexity=None,
-            js_divergence=None,
         )
 
         logger.info(

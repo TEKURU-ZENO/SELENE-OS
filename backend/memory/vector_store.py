@@ -133,21 +133,8 @@ class BGEReranker:
             except Exception as e:
                 logger.error("bge_reranker_prediction_failed", error=str(e))
 
-        # Jaccard lexical overlap + Dense similarity fallback
-        query_tokens = set(tokenize(query))
-        for c in candidates:
-            text_tokens = set(tokenize(c.get("text", "")))
-            overlap = len(query_tokens.intersection(text_tokens))
-            union = len(query_tokens.union(text_tokens))
-            jaccard = overlap / (union if union > 0 else 1.0)
-            
-            # Combine current RRF score with Jaccard overlap
-            c["_score"] = float(c.get("_score", 0.0) * 0.5 + jaccard * 0.5)
-        
-        sorted_candidates = sorted(candidates, key=lambda x: x["_score"], reverse=True)
-        return sorted_candidates[:top_k]
-
-
+        # Fallback: if BGE CrossEncoder is not active, preserve exact RRF 70/30 scores and ranking
+        return candidates[:top_k]
 class VectorStore:
     """
     FAISS-backed and BM25-backed vector store for SELENE's Context Engine (Layer 3).
@@ -213,31 +200,28 @@ class VectorStore:
 
     async def search(self, query: str, k: int = 5) -> List[dict]:
         """
-        Returns the top-k hybrid search results using RRF 70/30 and BGE-2 reranking.
+        Returns the top-k hybrid search results using RRF 70/30 and optional BGE-2 reranking.
         """
         self._ensure_initialized()
-        if self._index.ntotal == 0:
+        if self._index.ntotal == 0 and len(self._metadata) == 0:
             return []
 
         try:
             # ── 1. Dense FAISS Search ──
-            vector = await self._embed(query)
-            if vector is None:
-                return []
-
-            import numpy as np
-            query_array = np.array([vector], dtype="float32")
-            
-            # Retrieve slightly more than k to allow reranking candidates
-            faiss_k = max(20, k * 2)
-            actual_k = min(faiss_k, self._index.ntotal)
-            distances, indices = self._index.search(query_array, actual_k)
-
             dense_ranks = {}
-            for rank_idx, (dist, idx) in enumerate(zip(distances[0], indices[0]), 1):
-                if idx < 0 or idx >= len(self._metadata):
-                    continue
-                dense_ranks[idx] = rank_idx
+            faiss_k = max(20, k * 2)
+            if self._index.ntotal > 0:
+                vector = await self._embed(query)
+                if vector is not None:
+                    import numpy as np
+                    query_array = np.array([vector], dtype="float32")
+                    actual_k = min(faiss_k, self._index.ntotal)
+                    if actual_k > 0:
+                        distances, indices = self._index.search(query_array, actual_k)
+                        for rank_idx, (dist, idx) in enumerate(zip(distances[0], indices[0]), 1):
+                            if idx < 0 or idx >= len(self._metadata):
+                                continue
+                            dense_ranks[idx] = rank_idx
 
             # ── 2. Sparse BM25 Search ──
             sparse_results = self._bm25.search(query, limit=faiss_k)
@@ -252,11 +236,6 @@ class VectorStore:
             for idx in all_candidate_indices:
                 dense_rank = dense_ranks.get(idx)
                 sparse_rank = sparse_ranks.get(idx)
-                
-
-
-
-                
 
                 rrf_score = compute_rrf_score(
                     dense_rank=dense_rank,
@@ -268,7 +247,8 @@ class VectorStore:
                 
                 entry = dict(self._metadata[idx])
                 entry["_score"] = float(rrf_score)
-                entry["_idx"] = idx
+                entry["_rrf_score"] = float(rrf_score)
+                entry["_idx"] = int(idx)
                 rrf_candidates.append(entry)
 
             # Sort by RRF score descending
@@ -283,6 +263,17 @@ class VectorStore:
         except Exception as e:
             logger.error("vector_search_failed", error=str(e))
             return []
+
+    def search_sync(self, query: str, k: int = 5) -> List[dict]:
+        """Synchronous wrapper for hybrid retrieval."""
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            return asyncio.run(self.search(query, k=k))
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            return executor.submit(asyncio.run, self.search(query, k=k)).result()
 
     def persist(self) -> None:
         """Saves the FAISS index and metadata to disk."""

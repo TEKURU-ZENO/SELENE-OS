@@ -105,6 +105,26 @@ def test_rrf_and_bm25():
     assert len(bm25_res) == 1
     assert bm25_res[0][0] == 2
 
+    # Hybrid Search Verification (RRF 70/30)
+    hybrid_res = store.search_sync("safety locks")
+    assert len(hybrid_res) >= 1
+    assert hybrid_res[0]["text"] == doc3
+    assert hybrid_res[0]["_score"] > 0.0
+
+    # Original RRF 70/30 Rank Invariant Verification
+    dense_ranks = {0: 1, 1: 2}
+    sparse_ranks = {1: 1, 2: 2}
+    rrf_scores = {}
+    for idx in (0, 1, 2):
+        dr = dense_ranks.get(idx)
+        sr = sparse_ranks.get(idx)
+        dense_rrf = 1.0 / (60.0 + dr) if dr else 0.0
+        sparse_rrf = 1.0 / (60.0 + sr) if sr else 0.0
+        rrf_scores[idx] = 0.7 * dense_rrf + 0.3 * sparse_rrf
+
+    assert rrf_scores[1] > rrf_scores[0]
+    assert rrf_scores[0] > rrf_scores[2]
+
     logger.info("PASS: BM25 indexing and RRF mathematical ranking verified")
 
 

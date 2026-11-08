@@ -276,6 +276,7 @@ class MemoryMetadata(BaseModel):
     importance: float = Field(default=0.5, ge=0.0, le=1.0)
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     recency_score: float = Field(default=1.0, ge=0.0, le=1.0)
+    decay_rate: float = Field(default=0.05, ge=0.0)
     access_count: int = Field(default=0)
     source: str = Field(default="system")
     tags: List[str] = Field(default_factory=list)
@@ -524,9 +525,6 @@ class CriticVerdict(BaseModel):
     estimated_execution_cost: int = 0
     static_checks_passed: bool = True
     cognitive_checks_passed: bool = True
-    shannon_entropy: Optional[float] = None
-    perplexity: Optional[float] = None
-    js_divergence: Optional[float] = None
 
 
 # ══════════════════════════════════════════════════════════════════

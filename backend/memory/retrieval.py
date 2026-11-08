@@ -3,6 +3,7 @@ SELENE OS — Hybrid Retrieval & Context Compression
 Implements the retrieval pipeline: Dense + Sparse -> Scoring -> RRF -> Stratification -> Compression.
 """
 
+import json
 import math
 import asyncio
 import concurrent.futures
@@ -141,8 +142,8 @@ class RetrievalEngine:
             meta = m.metadata
             
             # Exponential temporal decay calculation (e^(-lambda * dt_hours))
-            dt_hours = (now - m.created_at).total_seconds() / 3600.0
-            lambda_val = getattr(m, "decay_rate", 0.05)
+            dt_hours = max(0.0, (now - m.created_at).total_seconds() / 3600.0)
+            lambda_val = getattr(meta, "decay_rate", getattr(m, "decay_rate", 0.05))
             decay = math.exp(-lambda_val * dt_hours)
             
             meta.recency_score = decay

@@ -130,4 +130,4 @@ When a user request arrives, the workflow integration happens in the following s
 3. **Match Found:** If a pack's activation triggers match the intent, the planner adopts the pack's steps directly, substituting variables where necessary.
 4. **Execution:** The Orchestrator routes the pre-defined steps to the relevant LangGraph execution nodes.
 
-This bypasses the hallucination-prone step of zero-shot planning, drastically improving speed and reliability.
+This bypasses the variance of zero-shot planning, drastically improving speed and reliability.

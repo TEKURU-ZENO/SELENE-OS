@@ -1,5 +1,5 @@
 """
-🌙 SELENE OS — Main Application Entry Point
+SELENE OS — Main Application Entry Point
 
 Strategic Executive Layer for Everyday Navigation & Execution
 
@@ -68,7 +68,7 @@ app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
     description=(
-        "🌙 SELENE OS — A proactive multi-agent AI operating system. "
+        "SELENE OS — A proactive multi-agent AI operating system. "
         "Transforms user intent into planned, verified, and executed outcomes."
     ),
     docs_url="/docs",

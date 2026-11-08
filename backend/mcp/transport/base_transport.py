@@ -4,10 +4,8 @@ Decouples runtime logic from the underlying protocol (stdio, websocket, http).
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from mcp.schemas import TransportType
+from typing import Dict, Any
+from mcp.schemas import TransportType
 
 
 class BaseTransport(ABC):

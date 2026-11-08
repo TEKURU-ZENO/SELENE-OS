@@ -334,7 +334,7 @@ async def demo_reset():
         status="waiting_hitl",
         params={
             "channel": "engineering-releases",
-            "text": "🚀 SELENE OS v0.1.3-alpha has been successfully drafted.",
+            "text": "SELENE OS v0.1.3-alpha has been successfully drafted.",
             "action_preview": "Send notification message to Slack channel #engineering-releases."
         },
         session_id="default_session",

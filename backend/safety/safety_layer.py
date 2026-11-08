@@ -2,7 +2,7 @@
 SELENE OS — Safety Module (Cross-Cutting)
 Applied at: planning, execution, and response layers.
 
-🔧 NOT a top layer. This is a cross-cutting concern invoked by the orchestrator
+NOT a top layer. This is a cross-cutting concern invoked by the orchestrator
 at multiple pipeline stages: before planning, before execution, and before response.
 """
 

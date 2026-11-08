@@ -2,7 +2,7 @@
 SELENE OS — Core Data Schemas (Phase 15 Platform Ecosystem)
 Pydantic models defining strict data contracts across all system boundaries.
 
-🔧 UPDATES:
+UPDATES:
 - PluginManifest & PluginTrustClassification (Controlled Extensibility).
 - OrganizationalMemoryTier (Cognitive Governance).
 - SharedCognitiveWorkflow (Platform Collaboration).
@@ -111,6 +111,21 @@ class SafetyAction(str, Enum):
     EDIT = "edit"
     REJECT = "reject"
     RESPOND = "respond"
+
+class SafetyCheck(BaseModel):
+    action: str
+    risk_level: RiskLevel
+    requires_confirmation: bool = False
+    blocked: bool = False
+    reason: Optional[str] = None
+
+class SafetyAuditEntry(BaseModel):
+    action: str
+    risk_level: RiskLevel
+    decision: SafetyAction
+    actor: str = "system"
+    details: Optional[Dict[str, Any]] = None
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 class EventType(str, Enum):
     EXECUTION_LOG = "execution_log"

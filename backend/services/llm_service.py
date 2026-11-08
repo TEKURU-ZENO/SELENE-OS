@@ -1,15 +1,17 @@
+from __future__ import annotations
 """
 SELENE OS — LLM Service (Restructured)
 Abstracted LLM provider with streaming, retries, timeout, and fallback.
 
-🔧 CRITICAL FIX: Added retry + timeout + fallback abstraction layer.
+CRITICAL FIX: Added retry + timeout + fallback abstraction layer.
 Without this, everything downstream breaks.
 """
 
 import asyncio
 import json
 import time
-from typing import AsyncGenerator, Optional
+
+from typing import Any, AsyncGenerator, Optional, List, Dict
 from config.settings import settings, LLMProvider
 from schemas import ChatMessage, MessageRole
 import structlog
@@ -168,7 +170,7 @@ Formatting:
 
         # All providers and retries exhausted
         logger.error("llm_all_providers_failed", last_error=last_error)
-        yield f"\n\n⚠️ SELENE encountered an error communicating with the AI provider. Error: {last_error}"
+        yield f"\n\nSELENE encountered an error communicating with the AI provider. Error: {last_error}"
 
     async def _collect_stream(
         self, stream_fn, messages, temperature, max_tokens
@@ -261,7 +263,6 @@ Formatting:
         Falls back to a high-quality deterministic model generator if keys are absent or errors occur.
         """
         from config.settings import settings
-        from typing import Any
         import json
 
         # ── 1. Try Real LLM structured generation if key is present ──
@@ -346,7 +347,7 @@ Formatting:
                         "success_criteria": [{"type": "status", "expected": "sent", "required": True}],
                         "params": {
                             "channel": "engineering-releases",
-                            "text": "🚀 SELENE OS v0.1.3-alpha has been successfully drafted.",
+                            "text": "SELENE OS v0.1.3-alpha has been successfully drafted.",
                             "action_preview": "Send notification message to Slack channel #engineering-releases."
                         },
                         "status": TaskState.PENDING,

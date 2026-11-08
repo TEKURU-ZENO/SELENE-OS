@@ -2,7 +2,7 @@
 SELENE OS — Intent Engine (Restructured)
 Classifies user input with confidence-based routing.
 
-🔧 UPGRADE: If confidence < threshold → triggers clarification instead of guessing.
+UPGRADE: If confidence < threshold → triggers clarification instead of guessing.
 
 Phase 0-1: Rule-based + keyword classification
 Phase 2+:  LLM-powered intent classification

@@ -63,30 +63,56 @@ class BM25Index:
 
     def search(self, query: str, limit: int = 20) -> List[Tuple[int, float]]:
         q_tokens = tokenize(query)
-        scores = []
-        N = len(self.docs)
-        if N == 0:
+        if not q_tokens or not self.docs:
             return []
 
+        N = len(self.docs)
+        q_vocab_terms = [t for t in q_tokens if t in self.vocab]
+        if not q_vocab_terms:
+            return []
+
+        # 1. Attempt AND-style matching (all query terms in vocab present in document)
+        scores = []
         for idx, doc_tokens in enumerate(self.docs):
+            doc_token_set = set(doc_tokens)
+            if not all(term in doc_token_set for term in q_vocab_terms):
+                continue
+
             score = 0.0
             doc_len = self.doc_lengths[idx]
             tf = Counter(doc_tokens)
-            
-            for q_term in q_tokens:
-                if q_term not in self.vocab:
-                    continue
-                
+
+            for q_term in q_vocab_terms:
                 df_term = self.df[q_term]
                 idf = math.log((N - df_term + 0.5) / (df_term + 0.5) + 1.0)
-                
                 term_tf = tf[q_term]
                 numerator = term_tf * (self.k1 + 1.0)
                 denominator = term_tf + self.k1 * (1.0 - self.b + self.b * (doc_len / (self.avg_doc_len or 1.0)))
                 score += idf * (numerator / denominator)
-                
+
             if score > 0.0:
                 scores.append((idx, score))
+
+        # 2. Fallback to OR-style matching if AND returned no documents
+        if not scores:
+            for idx, doc_tokens in enumerate(self.docs):
+                score = 0.0
+                doc_len = self.doc_lengths[idx]
+                tf = Counter(doc_tokens)
+
+                for q_term in q_vocab_terms:
+                    if q_term not in tf:
+                        continue
+                    df_term = self.df[q_term]
+                    idf = math.log((N - df_term + 0.5) / (df_term + 0.5) + 1.0)
+                    term_tf = tf[q_term]
+                    numerator = term_tf * (self.k1 + 1.0)
+                    denominator = term_tf + self.k1 * (1.0 - self.b + self.b * (doc_len / (self.avg_doc_len or 1.0)))
+                    score += idf * (numerator / denominator)
+
+                if score > 0.0:
+                    scores.append((idx, score))
+
         scores.sort(key=lambda x: x[1], reverse=True)
         return scores[:limit]
 

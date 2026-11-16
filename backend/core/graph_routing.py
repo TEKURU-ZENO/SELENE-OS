@@ -20,7 +20,7 @@ def route_after_intent(state: SeleneState) -> Literal["context", "hitl", "reflec
 
 def route_after_critic(state: SeleneState) -> Literal["capability", "planner", "reflection"]:
     # Check if the Critic rejected the plan
-    critic_verdict = state.get("critic_verdict", {})
+    critic_verdict = state.get("critic_verdict") or {}
     if not critic_verdict.get("approved", False):
         # Repair Loop Logic
         if state.get("repair_count", 0) < 3:
@@ -28,7 +28,6 @@ def route_after_critic(state: SeleneState) -> Literal["capability", "planner", "
             return "planner"
         else:
             logger.error("max_repairs_exceeded_halting")
-            state["error"] = "Max plan repairs exceeded."
             return "reflection"
             
     # If approved and no errors

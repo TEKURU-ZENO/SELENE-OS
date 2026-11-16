@@ -4,7 +4,7 @@ Minimal TypedDict for LangGraph. PURELY COGNITIVE.
 References large execution/memory states rather than storing them.
 """
 
-from typing import TypedDict, Dict, Any, Optional
+from typing import TypedDict, Dict, Any, Optional, List
 
 class SeleneState(TypedDict):
     """
@@ -20,6 +20,13 @@ class SeleneState(TypedDict):
 
     plan_ref: str # ID pointing to ExecutionStore plan
     current_node_id: Optional[str] # The DAG node currently being evaluated
+
+    critic_verdict: Optional[Dict[str, Any]]
+    repair_count: int
+    repair_context: Optional[Dict[str, Any]]
+    resolved_tools: Dict[str, str]
+    validation_result: Optional[Dict[str, Any]]
+    pending_procedural_updates: List[Dict[str, Any]]
 
     reflection_ref: Optional[str]
 

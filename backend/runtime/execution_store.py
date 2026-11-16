@@ -22,10 +22,30 @@ class ExecutionStore:
     def __init__(self):
         # Maps graph task_id -> Node/Execution states
         self._store: Dict[str, Dict[str, Any]] = {}
+        # Maps plan_id -> ExecutionPlan instance
+        self._plans: Dict[str, Any] = {}
         # Maps execution_id -> ExecutionReceipt dictionary or object
         self._receipts: Dict[str, Any] = {}
         # Maps job_id -> Job Dict (in-memory cache mirror of DB)
         self._jobs: Dict[str, Dict[str, Any]] = {}
+
+    def save_plan(self, plan: Any) -> None:
+        """Caches an ExecutionPlan keyed by plan_id."""
+        self._plans[plan.plan_id] = plan
+
+    def get_plan(self, plan_id: Optional[str]) -> Optional[Any]:
+        """Retrieves a cached ExecutionPlan by plan_id."""
+        if not plan_id:
+            return None
+        return self._plans.get(plan_id)
+
+    def _schedule_db_write(self, coro) -> None:
+        """Schedules an async DB task when a running event loop exists."""
+        try:
+            asyncio.get_running_loop()
+            asyncio.create_task(coro)
+        except RuntimeError:
+            coro.close()
 
     async def load_from_db(self) -> None:
         """Loads all execution records from database to populate the in-memory cache on startup."""
@@ -126,7 +146,7 @@ class ExecutionStore:
         self._jobs[job_id] = job_data
         
         # Trigger async write to DB
-        asyncio.create_task(self._async_insert_job(job_data))
+        self._schedule_db_write(self._async_insert_job(job_data))
         logger.info("job_registered", job_id=job_id, capability=capability)
 
     async def _async_insert_job(self, job_data: dict) -> None:
@@ -180,7 +200,7 @@ class ExecutionStore:
         execution_id = receipt.get("execution_id") or f"exec_{uuid.uuid4().hex}"
         self._receipts[execution_id] = receipt
         
-        asyncio.create_task(self._async_update_job_completion(job_id, job))
+        self._schedule_db_write(self._async_update_job_completion(job_id, job))
         logger.info("job_completed_recorded", job_id=job_id, status=job["status"])
 
     async def _async_update_job_completion(self, job_id: str, job_data: dict) -> None:
@@ -243,7 +263,7 @@ class ExecutionStore:
                 from runtime.task_queue import task_queue
                 task_queue.set_task_status(job_id, "failed")
                 
-            asyncio.create_task(self._async_update_hitl_decision(job_id, decision, job["params"], job["status"]))
+            self._schedule_db_write(self._async_update_hitl_decision(job_id, decision, job["params"], job["status"]))
             logger.info("hitl_decision_recorded", job_id=job_id, decision=decision)
 
     async def _async_update_hitl_decision(self, job_id: str, decision: str, params: dict, status: str) -> None:

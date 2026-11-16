@@ -9,7 +9,7 @@ UPDATES:
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional, Any, List, Dict
+from typing import Optional, Any, List, Dict, Union
 from datetime import datetime, time as datetime_time
 from enum import Enum
 import uuid
@@ -367,7 +367,7 @@ class ExecutionContext(BaseModel):
     tenant_id: str = Field(default="default_tenant")
     user_id: str = Field(default="default_user")
     session_id: str
-    trace_id: str
+    trace_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     permissions: List[str] = Field(default_factory=list)
     active_memory_id: Optional[str] = None
     environment: str = Field(default="development")
@@ -387,7 +387,7 @@ class ExecutionReceipt(BaseModel):
     
     tool: str
     capability: Optional[Capability] = None
-    status: TaskState
+    status: Union[TaskState, ExecutionStatus]
     duration_ms: float
     
     receipt_hash: str = ""
@@ -432,6 +432,7 @@ class ExecutionState(BaseModel):
     results: List[ExecutionResultNode] = Field(default_factory=list)
     logs: List[StepLog] = Field(default_factory=list)
     total_duration_ms: float = 0.0
+    waves_executed: int = 0
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -475,6 +476,11 @@ class ExecutionPlan(BaseModel):
     groups: List[ObjectiveGroup]
     created_at: datetime = Field(default_factory=datetime.utcnow)
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+
+    @property
+    def nodes(self) -> List[PlanNode]:
+        """Flattens all PlanNodes across ObjectiveGroups in order."""
+        return [node for group in self.groups for node in group.nodes]
 
 
 # ══════════════════════════════════════════════════════════════════

@@ -143,6 +143,38 @@ class GoldenTraceTester:
         
         print("\n=== ALL TRACES AND ATTACKS PASSED ===\n")
 
+
+def test_golden_trace_capability_translation():
+    from mcp.registry.server_registry import server_registry
+    server_registry.register_server(github_mcp_manifest)
+    tester = GoldenTraceTester()
+    resolved = tester.test_1_golden_path_capability_translation()
+    assert resolved["server"].server_id == "github_mcp_core"
+
+
+def test_golden_trace_policy_gate_and_receipt():
+    from mcp.registry.server_registry import server_registry
+    server_registry.register_server(github_mcp_manifest)
+    tester = GoldenTraceTester()
+    resolved = tester.test_1_golden_path_capability_translation()
+    receipt = tester.test_2_policy_gate_enforcement(resolved)
+    assert receipt.receipt_hash
+
+
+def test_golden_trace_replay_tampering():
+    from mcp.registry.server_registry import server_registry
+    server_registry.register_server(github_mcp_manifest)
+    tester = GoldenTraceTester()
+    resolved = tester.test_1_golden_path_capability_translation()
+    receipt = tester.test_2_policy_gate_enforcement(resolved)
+    tester.test_3_attack_replay_tampering(receipt)
+
+
+def test_golden_trace_fallback_integrity():
+    tester = GoldenTraceTester()
+    tester.test_4_attack_fallback_integrity()
+
+
 if __name__ == "__main__":
     tester = GoldenTraceTester()
     tester.run_all()

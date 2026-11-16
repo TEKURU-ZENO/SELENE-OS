@@ -28,20 +28,19 @@ class CapabilityResolver:
         Capability.EXECUTE_CODE: ["system_exec"],
     }
 
-    async def resolve(
-        self, 
-        capability: Capability, 
+    async def resolve_candidates(
+        self,
+        capability: Capability,
         context: ExecutionContext
-    ) -> Optional[ToolDefinition]:
+    ) -> List[ToolDefinition]:
         """
-        Resolve the best tool for the capability based on context and environment.
+        Return all enabled, context-compliant tools for a capability in priority order.
         """
         tool_names = self._CAPABILITY_MAP.get(capability, [])
         if not tool_names:
             logger.warning("unresolved_capability", capability=capability.value)
-            return None
+            return []
 
-        # Gather registered and enabled tools for these names
         candidate_tools = []
         for name in tool_names:
             tool_def = tool_registry.get_tool(name)
@@ -50,10 +49,20 @@ class CapabilityResolver:
 
         if not candidate_tools:
             logger.warning("no_enabled_tools_for_capability", capability=capability.value)
-            return None
+            return []
 
-        # Filter and prioritize based on ExecutionContext
-        resolved_tool = self._prioritize_tools(candidate_tools, context)
+        return self._filter_valid_tools(candidate_tools, context)
+
+    async def resolve(
+        self, 
+        capability: Capability, 
+        context: ExecutionContext
+    ) -> Optional[ToolDefinition]:
+        """
+        Resolve the best tool for the capability based on context and environment.
+        """
+        valid_candidates = await self.resolve_candidates(capability, context)
+        resolved_tool = valid_candidates[0] if valid_candidates else None
         
         if resolved_tool:
             logger.info(
@@ -67,13 +76,13 @@ class CapabilityResolver:
             
         return resolved_tool
 
-    def _prioritize_tools(
+    def _filter_valid_tools(
         self, 
         candidates: List[ToolDefinition], 
         context: ExecutionContext
-    ) -> Optional[ToolDefinition]:
+    ) -> List[ToolDefinition]:
         """
-        Apply environment and context logic to select the best tool.
+        Apply environment and context logic to filter tools in priority order.
         """
         from schemas import FilePermissionMode
         
@@ -85,14 +94,22 @@ class CapabilityResolver:
                 if context.file_permission_mode == FilePermissionMode.READ_ONLY and "write" in tool.name:
                     continue  # Skip write tools in read-only mode
 
-            # 2. Add other context-based filtering here (e.g., environment=="production" disables system_exec)
+            # 2. Prevent OS agent in production
             if context.environment == "production" and tool.agent == "os_agent":
-                continue # Example: Prevent OS agent in production
+                continue
 
             valid_candidates.append(tool)
 
-        # Return the highest priority valid tool (first in the mapped list)
-        return valid_candidates[0] if valid_candidates else None
+        return valid_candidates
+
+    def _prioritize_tools(
+        self, 
+        candidates: List[ToolDefinition], 
+        context: ExecutionContext
+    ) -> Optional[ToolDefinition]:
+        """Backward-compatible helper returning the highest-priority valid tool."""
+        valid = self._filter_valid_tools(candidates, context)
+        return valid[0] if valid else None
 
 
 # Singleton
